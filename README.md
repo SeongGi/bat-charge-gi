@@ -97,23 +97,6 @@ brew install --cask --no-quarantine bat-charge-gi
 
 ---
 
-## AlDente Pro와의 비교
-
-| 기능 | bat-charge-gi | AlDente Free | AlDente Pro |
-|------|:---:|:---:|:---:|
-| 충전 제한 | O | O | O |
-| 강제 방전 | O | X | O |
-| 항해 모드 (Sailing) | O | X | O |
-| 배터리 캘리브레이션 | O | X | O |
-| 실시간 전력 분배 | O | X | O |
-| 고급 대시보드 | O | X | O |
-| 자동 업데이트 | O | O | O |
-| 로그인 시 자동 실행 | O | O | O |
-| **가격** | **무료** | 무료 | $22 |
-| **오픈소스** | **O** | X | X |
-
----
-
 ## 안전성
 
 - 배터리 충전 제어는 macOS 및 Apple의 전원 관리 하드웨어가 항상 최종 안전장치로 기능합니다
