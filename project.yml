@@ -1,0 +1,40 @@
+name: bat-charge-gi
+options:
+  bundleIdPrefix: com.seonggi
+
+targets:
+  bat-charge-gi:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: bat-charge-gi
+      - path: Shared
+    info:
+      path: bat-charge-gi/Info.plist
+    dependencies:
+      - target: com.seonggi.bat-charge-gi.helper
+        embed: false
+    buildPhases:
+      - script: |
+          # Copy Helper Executable to Contents/MacOS
+          mkdir -p "$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/MacOS"
+          cp "$BUILT_PRODUCTS_DIR/com.seonggi.bat-charge-gi.helper" "$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/MacOS/"
+          # Copy LaunchDaemon Plist to Contents/Library/LaunchDaemons
+          mkdir -p "$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+          cp "$SRCROOT/bat-charge-gi/com.seonggi.bat-charge-gi.helper.plist" "$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons/"
+        name: Copy Helper and Plist
+
+  com.seonggi.bat-charge-gi.helper:
+    type: tool
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: BatteryHelper
+      - path: Shared
+    info:
+      path: BatteryHelper/Info.plist
+    settings:
+      CODE_SIGN_IDENTITY: "-"
+      PRODUCT_BUNDLE_IDENTIFIER: com.seonggi.bat-charge-gi.helper
+      ENABLE_HARDENED_RUNTIME: YES
