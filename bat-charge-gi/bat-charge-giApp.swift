@@ -43,7 +43,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // macOS 윈도우 상태 자동 복원 속성을 강제로 끔
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
         
-        let contentView = ContentView()
+        var contentView = ContentView()
+        contentView.onUpdateCheck = { [weak self] in
+            self?.updaterController.checkForUpdates(nil)
+        }
         popover.contentViewController = NSHostingController(rootView: contentView)
         popover.behavior = .transient
         

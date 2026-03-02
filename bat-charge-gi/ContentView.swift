@@ -23,6 +23,8 @@ struct ContentView: View {
     @State private var batteryPercent: Int = 0
     @State private var showingClamshellWarning = false
     
+    var onUpdateCheck: (() -> Void)? = nil
+    
     var batteryWatts: Double {
         return (batteryVoltage * batteryAmperage) / 1_000_000.0
     }
@@ -402,6 +404,13 @@ struct ContentView: View {
                     .font(.caption)
                 
                 Spacer()
+                
+                if let onUpdateCheck = onUpdateCheck {
+                    Button("업데이트 확인") {
+                        onUpdateCheck()
+                    }
+                    .controlSize(.small)
+                }
                 
                 Button("종료") {
                     NSApplication.shared.terminate(nil)
