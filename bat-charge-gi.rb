@@ -2,10 +2,10 @@ cask "bat-charge-gi" do
   version "2.7.3"
   sha256 "0da37816986ff124116bd05446ccf69c56f3dd8aa2e4b630ff38b67e1d83165c"
 
-  url "https://github.com/SeongGi/dev/releases/download/v#{version}/bat-charge-gi.dmg"
+  url "https://github.com/SeongGi/bat-charge-gi/releases/download/v#{version}/bat-charge-gi.dmg"
   name "bat-charge-gi"
   desc "Advanced battery management and calibration tool for Apple Silicon"
-  homepage "https://github.com/SeongGi/dev"
+  homepage "https://github.com/SeongGi/bat-charge-gi"
 
   app "bat-charge-gi.app"
 

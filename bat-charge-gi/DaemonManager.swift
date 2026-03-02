@@ -12,6 +12,7 @@ class DaemonManager: ObservableObject {
     @Published var isDaemonRegistered: Bool = false
     
     private var connection: NSXPCConnection?
+    private var hasAttemptedAutoRegister: Bool = false
     
     private init() {
         checkDaemonStatus()
@@ -31,8 +32,11 @@ class DaemonManager: ObservableObject {
         if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ _ in
             DispatchQueue.main.async { 
                 self.isDaemonRegistered = false
-                // 통신 실패 시 즉각 백그라운드 재설치 로직(Applescript 팝업) 자동 점화
-                self.registerDaemon()
+                // 통신 실패 시 즉각 백그라운드 재설치 로직(Applescript 팝업) 자동 점화 (앱 생명주기당 최초 1회만)
+                if !self.hasAttemptedAutoRegister {
+                    self.hasAttemptedAutoRegister = true
+                    self.registerDaemon()
+                }
             }
             pingConnection.invalidate()
         }) as? BatteryHelperProtocol {

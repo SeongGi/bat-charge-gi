@@ -1,12 +1,16 @@
 name: bat-charge-gi
 options:
   bundleIdPrefix: com.seonggi
+  deploymentTarget:
+    macOS: 13.0
+attributes:
+  MARKETING_VERSION: 2.7.3
+  CURRENT_PROJECT_VERSION: 2.7.3.0
 
 targets:
   bat-charge-gi:
     type: application
     platform: macOS
-    deploymentTarget: "13.0"
     sources:
       - path: bat-charge-gi
       - path: Shared
