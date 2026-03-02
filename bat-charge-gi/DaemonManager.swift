@@ -26,7 +26,7 @@ class DaemonManager: ObservableObject {
         }
         
         // Fallback: Ping via XPC
-        let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+        let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
         pingConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         pingConnection.resume()
         
@@ -124,7 +124,7 @@ class DaemonManager: ObservableObject {
         }
         
         // ping 확인 후 실제 커넥션 생성
-        let newConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+        let newConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
         newConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         
         newConnection.interruptionHandler = { [weak self] in
