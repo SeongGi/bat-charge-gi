@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
-        <title>bat-charge-gi 업데이트 (v1.0)</title>
+        <title>bat-charge-gi 업데이트 (v2.7.4)</title>
         <item>
-            <title>Version 1.0</title>
+            <title>Version 2.7.4</title>
             <description><![CDATA[
             <ul>
-                <li>최초 릴리스: Sparkle 2 자동 업데이트 연동 완료</li>
-                <li>오픈소스 커뮤니티용 무결성 ZIP 파일 배포</li>
+                <li>수동 업데이트 메뉴 장착 완료!!</li>
             </ul>
             ]]></description>
-            <pubDate>Sun, 22 Feb 2026 14:00:00 +0900</pubDate>
-            
-            <!-- 아래 url을 나중에 GitHub Release 다운로드 주소로 바꾸세요 -->
-            <!-- 이 파일(appcast.xml)은 깃허브 저장소의 main 브랜치나 gh-pages 브랜치에 올려야 합니다. -->
-            <enclosure url="https://github.com/seonggihub/bat-charge-gi/releases/download/v1.0.0/bat-charge-gi.zip"
-                       sparkle:version="1.0.0"
-                       sparkle:shortVersionString="1.0.0"
+            <pubDate>Mon, 02 Mar 2026 14:00:00 +0900</pubDate>
+            <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.7.4/bat-charge-gi.dmg"
+                       sparkle:version="2.7.4"
+                       sparkle:shortVersionString="2.7.4"
                        type="application/octet-stream"
-                       length="2967089"
+                       length="2578212"
                        sparkle:edSignature="3oWMpxMv9EBp21Wj2Lu22HXV8crJwwUfFL7saC9FJGGk0TOlJvr6Covu+XNQX+yPorxBXfhIi0CsVlN84JKuCQ==" />
         </item>
     </channel>
