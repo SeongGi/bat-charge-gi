@@ -36,18 +36,25 @@ class DaemonManager: ObservableObject {
                 
                 // 완벽한 1회성 실행을 보장하기 위한 락 스코프
                 self.registerLock.lock()
-                let shouldRegister = !self.hasAttemptedAutoRegister
-                if shouldRegister {
+                
+                let plistPath = "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"
+                let plistExists = FileManager.default.fileExists(atPath: plistPath)
+                
+                // plist가 이미 존재하면(설치 이력 있음) 재부팅 직후 지연 현상이므로 강제 팝업 금지
+                let shouldRegister = !self.hasAttemptedAutoRegister && !plistExists
+                
+                if !self.hasAttemptedAutoRegister {
                     self.hasAttemptedAutoRegister = true
                 }
                 self.registerLock.unlock()
                 
-                // 통신 실패 시 즉각 백그라운드 재설치 로직(Applescript 팝업) 자동 점화 (앱 생명주기당 최초 1회만)
+                // 통신 실패 시 즉각 백그라운드 재설치 로직(Applescript 팝업) 자동 점화 
+                // (단, 앱 최초 설치 시점에만 동작하도록 플래그 + Plist 존재여부 교차 검증)
                 if shouldRegister {
-                    self.logger.notice("Attempting auto-register (First time only)")
+                    self.logger.notice("Attempting auto-register (First time only, Plist not found)")
                     self.registerDaemon()
                 } else {
-                    self.logger.notice("Auto-register blocked (Already attempted)")
+                    self.logger.notice("Auto-register blocked (Already attempted or Plist already exists)")
                 }
             }
             pingConnection.invalidate()
