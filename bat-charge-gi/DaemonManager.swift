@@ -33,29 +33,11 @@ class DaemonManager: ObservableObject {
         if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ _ in
             DispatchQueue.main.async { 
                 self.isDaemonRegistered = false
-                
-                // 완벽한 1회성 실행을 보장하기 위한 락 스코프
-                self.registerLock.lock()
-                
-                let plistPath = "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"
-                let plistExists = FileManager.default.fileExists(atPath: plistPath)
-                
-                // plist가 이미 존재하면(설치 이력 있음) 재부팅 직후 지연 현상이므로 강제 팝업 금지
-                let shouldRegister = !self.hasAttemptedAutoRegister && !plistExists
-                
-                if !self.hasAttemptedAutoRegister {
-                    self.hasAttemptedAutoRegister = true
-                }
-                self.registerLock.unlock()
-                
-                // 통신 실패 시 즉각 백그라운드 재설치 로직(Applescript 팝업) 자동 점화 
-                // (단, 앱 최초 설치 시점에만 동작하도록 플래그 + Plist 존재여부 교차 검증)
-                if shouldRegister {
-                    self.logger.notice("Attempting auto-register (First time only, Plist not found)")
-                    self.registerDaemon()
-                } else {
-                    self.logger.notice("Auto-register blocked (Already attempted or Plist already exists)")
-                }
+                self.logger.warning("XPC Ping failed. Daemon may not be running yet.")
+                // 재부팅 시 딜레이로 인해 무한 팝업이 뜨는 고질적 버그를 원천 제거하기 위해
+                // 자동 AppleScript 권한 요구(registerDaemon) 로직을 전면 삭제했습니다.
+                // 연결이 실패하면 단순히 UI에서 "활성화 안됨"으로 빨간 불만 띄워주고,
+                // 사용자가 권한 버튼을 직접 누를 때만 registerDaemon()을 수동 발동시킵니다.
             }
             pingConnection.invalidate()
         }) as? BatteryHelperProtocol {
