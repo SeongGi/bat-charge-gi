@@ -16,7 +16,8 @@
                        sparkle:version="2.7.5"
                        sparkle:shortVersionString="2.7.5"
                        type="application/octet-stream"
-                       length="0" />
+                       length="2576348"
+                       sparkle:edSignature="0OiliA1fItLP5fkVFFV/oCQPqHORrAC+zyEvz/6mlp0F3woHBsT/nsvteJ1lmlh0PGBrtgQ8BtMCJtxCk1+DCw==" />
         </item>
     </channel>
 </rss>
