@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
-        <title>bat-charge-gi 업데이트 (v2.7.4)</title>
+        <title>bat-charge-gi 업데이트</title>
         <item>
-            <title>Version 2.7.4</title>
+            <title>Version 2.7.5</title>
             <description><![CDATA[
             <ul>
-                <li>수동 업데이트 메뉴 장착 완료!!</li>
+                <li>방전 모드(Discharge Mode) 통신 복구</li>
+                <li>재부팅 시 암호 반복 팝업 완전 제거</li>
+                <li>앱 내 업데이트 확인 버튼 추가</li>
             </ul>
             ]]></description>
-            <pubDate>Mon, 02 Mar 2026 14:00:00 +0900</pubDate>
-            <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.7.4/bat-charge-gi.dmg"
-                       sparkle:version="2.7.4"
-                       sparkle:shortVersionString="2.7.4"
+            <pubDate>Mon, 03 Mar 2026 13:30:00 +0900</pubDate>
+            <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.7.5/bat-charge-gi.dmg"
+                       sparkle:version="2.7.5"
+                       sparkle:shortVersionString="2.7.5"
                        type="application/octet-stream"
-                       length="2578212"
-                       sparkle:edSignature="3oWMpxMv9EBp21Wj2Lu22HXV8crJwwUfFL7saC9FJGGk0TOlJvr6Covu+XNQX+yPorxBXfhIi0CsVlN84JKuCQ==" />
+                       length="0" />
         </item>
     </channel>
 </rss>
