@@ -89,6 +89,16 @@ brew tap SeongGi/tap
 brew install --cask --no-quarantine bat-charge-gi
 ```
 
+#### ⚠️ 타 PC 설치 및 업데이트 오류 시 (강제 재설치)
+이전 버전(`2.7.3` 등)의 설치 잔재나 Homebrew 캐시가 남아있어 "Checksum mismatch" 등의 오류가 발생하며 설치가 안 될 경우, 아래 명령어로 기존 Tap 연결을 끊고 최신 상태로 강제 재설치할 수 있습니다.
+
+```bash
+brew update
+brew untap SeongGi/tap
+brew tap SeongGi/tap
+brew reinstall --cask --no-quarantine bat-charge-gi
+```
+
 ### 수동 설치
 
 1. [Releases](https://github.com/seonggihub/bat-charge-gi/releases) 페이지에서 최신 `bat-charge-gi.dmg` 다운로드
