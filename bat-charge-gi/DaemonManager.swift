@@ -9,15 +9,26 @@ class DaemonManager: ObservableObject {
     
     let service = SMAppService.daemon(plistName: "com.seonggi.bat-charge-gi.helper.plist")
     
+    /// 데몬 연결 상태 (3단계: registered / connecting / notInstalled)
+    enum DaemonState {
+        case registered       // 정상 연결됨
+        case connecting       // plist는 존재하나 아직 XPC 응답 없음 (재부팅 직후)
+        case notInstalled     // 설치 안됨 (초기 상태)
+    }
+    
     @Published var isDaemonRegistered: Bool = false
+    @Published var daemonState: DaemonState = .notInstalled
     
     private var connection: NSXPCConnection?
-    private var hasAttemptedAutoRegister: Bool = false
-    private let registerLock = NSLock()
     
     private var retryTimer: Timer?
     private var retryCount: Int = 0
-    private let maxRetries: Int = 12  // 최대 12회 (약 1분)
+    private let maxRetries: Int = 24  // 최대 24회 = 약 2분
+    
+    /// 재부팅 후에도 LaunchDaemon plist가 존재하는지 확인
+    private var isDaemonPlistInstalled: Bool {
+        FileManager.default.fileExists(atPath: "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist")
+    }
     
     private init() {
         checkDaemonStatus()
@@ -26,21 +37,35 @@ class DaemonManager: ObservableObject {
     func checkDaemonStatus() {
         // 1단계: SMAppService 공식 API 체크
         if service.status == .enabled {
-            DispatchQueue.main.async {
-                self.isDaemonRegistered = true
-                self.stopRetryTimer()
-            }
+            markAsRegistered()
             return
         }
         
-        // 2단계: XPC 직접 Ping (launchctl로 수동 등록된 데몬 감지)
-        let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+        // 2단계: plist가 있으면 "설치됨이지만 아직 기동 대기 중" 상태로 표시
+        if isDaemonPlistInstalled {
+            DispatchQueue.main.async {
+                self.daemonState = .connecting
+            }
+        }
+        
+        // 3단계: XPC 직접 Ping (launchctl로 수동 등록된 데몬 감지)
+        // ⚠⚠⚠ 절대 .privileged 옵션을 붙이지 말 것! ⚠⚠⚠
+        // .privileged는 구형 SMJobBless 전용이며, 이걸 붙이면 macOS가
+        // "구형 헬퍼 설치가 필요하다"고 오인하여 시스템 자체적으로 강제 암호 팝업을 무한 생성함.
+        let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
         pingConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         pingConnection.resume()
         
         if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ _ in
             DispatchQueue.main.async {
-                self.isDaemonRegistered = false
+                // plist가 있으면 "연결 중..." 상태 유지, 없으면 "미설치"
+                if self.isDaemonPlistInstalled {
+                    self.daemonState = .connecting
+                    self.isDaemonRegistered = false
+                } else {
+                    self.daemonState = .notInstalled
+                    self.isDaemonRegistered = false
+                }
                 self.logger.warning("XPC Ping failed. Daemon may not be running yet. (retry \(self.retryCount)/\(self.maxRetries))")
                 // 재부팅 직후 데몬이 앱보다 늦게 뜨는 경우를 대비하여 자동 재시도
                 self.startRetryTimer()
@@ -48,13 +73,19 @@ class DaemonManager: ObservableObject {
             pingConnection.invalidate()
         }) as? BatteryHelperProtocol {
             proxy.getChargeLimit { _, _ in
-                DispatchQueue.main.async {
-                    self.isDaemonRegistered = true
-                    self.stopRetryTimer()
-                    self.logger.notice("Daemon connection confirmed via XPC ping!")
-                }
+                self.markAsRegistered()
                 pingConnection.invalidate()
             }
+        }
+    }
+    
+    /// 연결 성공 시 상태를 일괄 갱신
+    private func markAsRegistered() {
+        DispatchQueue.main.async {
+            self.isDaemonRegistered = true
+            self.daemonState = .registered
+            self.stopRetryTimer()
+            self.logger.notice("Daemon connection confirmed!")
         }
     }
     
@@ -71,11 +102,17 @@ class DaemonManager: ObservableObject {
             if self.retryCount >= self.maxRetries {
                 self.stopRetryTimer()
                 self.logger.warning("Max retries reached. Daemon may not be installed.")
+                // plist가 있다면 설치는 되어있으므로 notInstalled로 전환하지 않음
+                if !self.isDaemonPlistInstalled {
+                    DispatchQueue.main.async {
+                        self.daemonState = .notInstalled
+                    }
+                }
                 return
             }
             
-            // 타이머 콜백에서는 새 ping만 시도 (타이머는 유지)
-            let ping = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+            // ⚠ 절대 .privileged 옵션 금지!
+            let ping = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
             ping.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
             ping.resume()
             
@@ -83,11 +120,7 @@ class DaemonManager: ObservableObject {
                 ping.invalidate()
             }) as? BatteryHelperProtocol {
                 proxy.getChargeLimit { _, _ in
-                    DispatchQueue.main.async {
-                        self.isDaemonRegistered = true
-                        self.stopRetryTimer()
-                        self.logger.notice("Daemon detected on retry \(self.retryCount)!")
-                    }
+                    self.markAsRegistered()
                     ping.invalidate()
                 }
             }
@@ -167,7 +200,10 @@ class DaemonManager: ObservableObject {
                 appleScript.executeAndReturnError(&scriptError)
             }
         }
-        DispatchQueue.main.async { self.isDaemonRegistered = false }
+        DispatchQueue.main.async {
+            self.isDaemonRegistered = false
+            self.daemonState = .notInstalled
+        }
     }
     
     func helperConnection() -> NSXPCConnection? {
@@ -175,8 +211,8 @@ class DaemonManager: ObservableObject {
             return connection
         }
         
-        // ping 확인 후 실제 커넥션 생성
-        let newConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+        // ⚠ 절대 .privileged 옵션 금지! (재부팅 팝업 원흉)
+        let newConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
         newConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         
         newConnection.interruptionHandler = { [weak self] in

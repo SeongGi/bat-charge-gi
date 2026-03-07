@@ -364,7 +364,20 @@ struct ContentView: View {
             
             // ── 데몬 상태 ──
             VStack(alignment: .leading, spacing: 4) {
-                if !daemonManager.isDaemonRegistered {
+                switch daemonManager.daemonState {
+                case .registered:
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill").foregroundColor(.green).font(.caption)
+                        Text("백엔드 코어 연동 정상").font(.caption).foregroundColor(.green)
+                    }
+                case .connecting:
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("백엔드 코어 연결 중...").font(.caption).foregroundColor(.orange)
+                    }
+                    Text("재부팅 직후 잠시 대기합니다. 잠시만 기다려주세요.")
+                        .font(.caption2).foregroundColor(.secondary)
+                case .notInstalled:
                     HStack {
                         Button("백그라운드 제어 권한 허용 (Helper 설치)") {
                             daemonManager.registerDaemon()
@@ -377,11 +390,6 @@ struct ContentView: View {
                     }
                     Text("최초 1회 루트(Root) 데몬 설치가 필요합니다.")
                         .font(.caption2).foregroundColor(.secondary)
-                } else {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill").foregroundColor(.green).font(.caption)
-                        Text("백엔드 코어 연동 정상").font(.caption).foregroundColor(.green)
-                    }
                 }
             }
             
