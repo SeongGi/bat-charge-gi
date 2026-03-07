@@ -15,37 +15,89 @@ class DaemonManager: ObservableObject {
     private var hasAttemptedAutoRegister: Bool = false
     private let registerLock = NSLock()
     
+    private var retryTimer: Timer?
+    private var retryCount: Int = 0
+    private let maxRetries: Int = 12  // 최대 12회 (약 1분)
+    
     private init() {
         checkDaemonStatus()
     }
     
     func checkDaemonStatus() {
+        // 1단계: SMAppService 공식 API 체크
         if service.status == .enabled {
-            DispatchQueue.main.async { self.isDaemonRegistered = true }
+            DispatchQueue.main.async {
+                self.isDaemonRegistered = true
+                self.stopRetryTimer()
+            }
             return
         }
         
-        // Fallback: Ping via XPC
+        // 2단계: XPC 직접 Ping (launchctl로 수동 등록된 데몬 감지)
         let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
         pingConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         pingConnection.resume()
         
         if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ _ in
-            DispatchQueue.main.async { 
+            DispatchQueue.main.async {
                 self.isDaemonRegistered = false
-                self.logger.warning("XPC Ping failed. Daemon may not be running yet.")
-                // 재부팅 시 딜레이로 인해 무한 팝업이 뜨는 고질적 버그를 원천 제거하기 위해
-                // 자동 AppleScript 권한 요구(registerDaemon) 로직을 전면 삭제했습니다.
-                // 연결이 실패하면 단순히 UI에서 "활성화 안됨"으로 빨간 불만 띄워주고,
-                // 사용자가 권한 버튼을 직접 누를 때만 registerDaemon()을 수동 발동시킵니다.
+                self.logger.warning("XPC Ping failed. Daemon may not be running yet. (retry \(self.retryCount)/\(self.maxRetries))")
+                // 재부팅 직후 데몬이 앱보다 늦게 뜨는 경우를 대비하여 자동 재시도
+                self.startRetryTimer()
             }
             pingConnection.invalidate()
         }) as? BatteryHelperProtocol {
             proxy.getChargeLimit { _, _ in
-                DispatchQueue.main.async { self.isDaemonRegistered = true }
+                DispatchQueue.main.async {
+                    self.isDaemonRegistered = true
+                    self.stopRetryTimer()
+                    self.logger.notice("Daemon connection confirmed via XPC ping!")
+                }
                 pingConnection.invalidate()
             }
         }
+    }
+    
+    /// 재부팅 직후 데몬 지연 기동을 감지하기 위한 주기적 재시도 타이머
+    private func startRetryTimer() {
+        // 이미 타이머가 돌고 있거나, 최대 재시도 횟수 초과 시 중단
+        guard retryTimer == nil, retryCount < maxRetries else { return }
+        
+        retryTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] timer in
+            guard let self = self else { timer.invalidate(); return }
+            self.retryCount += 1
+            self.logger.notice("Retrying daemon detection... (\(self.retryCount)/\(self.maxRetries))")
+            
+            if self.retryCount >= self.maxRetries {
+                self.stopRetryTimer()
+                self.logger.warning("Max retries reached. Daemon may not be installed.")
+                return
+            }
+            
+            // 타이머 콜백에서는 새 ping만 시도 (타이머는 유지)
+            let ping = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper", options: .privileged)
+            ping.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
+            ping.resume()
+            
+            if let proxy = ping.remoteObjectProxyWithErrorHandler({ _ in
+                ping.invalidate()
+            }) as? BatteryHelperProtocol {
+                proxy.getChargeLimit { _, _ in
+                    DispatchQueue.main.async {
+                        self.isDaemonRegistered = true
+                        self.stopRetryTimer()
+                        self.logger.notice("Daemon detected on retry \(self.retryCount)!")
+                    }
+                    ping.invalidate()
+                }
+            }
+        }
+    }
+    
+    private func stopRetryTimer() {
+        retryTimer?.invalidate()
+        retryTimer = nil
+        retryCount = 0
     }
     
     func registerDaemon() {
