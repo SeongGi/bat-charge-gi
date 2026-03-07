@@ -9,13 +9,13 @@
                 <li>최신 버전 v2.7.5 릴리스</li>
             </ul>
             ]]></description>
-            <pubDate>Sat, 07 Mar 2026 19:28:09 +0900</pubDate>
+            <pubDate>Sat, 07 Mar 2026 19:34:54 +0900</pubDate>
             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.7.5/bat-charge-gi.dmg"
                        sparkle:version="2.7.5"
                        sparkle:shortVersionString="2.7.5"
                        type="application/octet-stream"
-                       length="2595773"
-                       sparkle:edSignature="swc+Q6xV/VRkSqorMtVaynE0BFAErKyxCUfad8dqh6PCYFOIE6tt9yTiZ/+0GLdePPRQiyIBtdEEjlGY0ploDQ==" />
+                       length="2595812"
+                       sparkle:edSignature="6hwaUtfuW7aj1LxAfCPrEYmzqYQWO5Gy9sT2XZur8EPaxVoXel4kFdgjyKF/CQIac75mr3WN4Db+CJegGWEaDQ==" />
         </item>
     </channel>
 </rss>
