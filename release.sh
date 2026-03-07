@@ -41,10 +41,8 @@ echo "   ✅ DMG 생성 완료"
 
 # ── 4단계: Sparkle EdDSA 서명 ──
 echo "[4/7] Sparkle EdDSA 서명 생성 중..."
-# Sparkle은 zip을 서명해야 하므로 앱을 zip으로도 압축
-rm -f ${APP_NAME}.zip
-zip -r -q ${APP_NAME}.zip ${APP_NAME}.app
-SIGN_OUTPUT=$(echo "$PRIVATE_KEY" | Sparkle_Framework/bin/sign_update --ed-key-file - ${APP_NAME}.zip 2>&1)
+# ⚠ 반드시 DMG 파일을 서명해야 함! (appcast.xml의 다운로드 URL이 DMG를 가리키기 때문)
+SIGN_OUTPUT=$(echo "$PRIVATE_KEY" | Sparkle_Framework/bin/sign_update --ed-key-file - ${APP_NAME}.dmg 2>&1)
 ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'sparkle:edSignature="[^"]*"' | sed 's/sparkle:edSignature="//;s/"//')
 FILE_LENGTH=$(stat -f%z ${APP_NAME}.dmg)
 echo "   서명: ${ED_SIGNATURE}"
@@ -87,7 +85,7 @@ echo "   DMG SHA256: ${DMG_HASH}"
 sed -i '' "s|version \".*\"|version \"${NEW_VERSION}\"|" bat-charge-gi.rb
 sed -i '' "s|sha256 \".*\"|sha256 \"${DMG_HASH}\"|" bat-charge-gi.rb
 
-git add bat-charge-gi/Info.plist bat-charge-gi.rb appcast.xml ${APP_NAME}.zip
+git add bat-charge-gi/Info.plist bat-charge-gi.rb appcast.xml
 git commit -m "release: v${NEW_VERSION}"
 git push origin main
 
