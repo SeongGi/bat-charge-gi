@@ -6,15 +6,18 @@
             <title>Version 2.8.0</title>
             <description><![CDATA[
             <ul>
-                <li>최신 버전 v2.8.0 릴리스</li>
+                <li>재부팅 후 데몬 자동 복구 개선 (launchctl bootstrap + KeepAlive)</li>
+                <li>30초 이상 연결 안 될 시 launchctl kickstart 자동 재기동 (암호 불필요)</li>
+                <li>로그인 시 자동 실행 체크가 재부팅 후 해제되던 버그 수정</li>
+                <li>업데이트 확인 버튼 추가</li>
             </ul>
             ]]></description>
-            <pubDate>Sun, 08 Mar 2026 14:16:45 +0900</pubDate>
+            <pubDate>Sat, 08 Mar 2026 14:17:00 +0900</pubDate>
             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.8.0/bat-charge-gi.dmg"
                        sparkle:version="2.8.0"
                        sparkle:shortVersionString="2.8.0"
                        type="application/octet-stream"
-                       length="2601649"
+                       length="2578212"
                        sparkle:edSignature="kHf1IxrteT4YkSVUVqBprPxXyuJipbwRxUmbqKbugesnP/WbIr6UyBkQb3d2+Mkb8csC3m5/q25jKp6Yzv1oBA==" />
         </item>
     </channel>
