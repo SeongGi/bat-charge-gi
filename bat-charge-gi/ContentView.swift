@@ -399,15 +399,7 @@ struct ContentView: View {
             HStack {
                 Toggle("로그인 시 자동 실행", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { newValue in
-                        do {
-                            if newValue {
-                                try SMAppService.mainApp.register()
-                            } else {
-                                try SMAppService.mainApp.unregister()
-                            }
-                        } catch {
-                            print("Failed to change launch at login status: \(error)")
-                        }
+                        setLaunchAtLogin(enabled: newValue)
                     }
                     .font(.caption)
                 
@@ -429,7 +421,7 @@ struct ContentView: View {
         .padding()
         .frame(width: 340)
         .onAppear {
-            launchAtLogin = SMAppService.mainApp.status == .enabled
+            launchAtLogin = isLaunchAtLoginEnabled()
             fetchChargeLimit()
             fetchExtraBatteryInfo()
             
@@ -617,7 +609,56 @@ struct ContentView: View {
             center.add(request)
         }
     }
+    
+    // MARK: - 로그인 시 자동 실행 (LaunchAgent plist 기반)
+    // ad-hoc 서명 앱에서는 SMAppService.mainApp이 정상 동작하지 않으므로
+    // ~/Library/LaunchAgents/ 에 plist 파일을 직접 관리합니다.
+    
+    private func launchAgentPlistPath() -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/Library/LaunchAgents/com.seonggi.bat-charge-gi.plist"
+    }
+    
+    private func isLaunchAtLoginEnabled() -> Bool {
+        return FileManager.default.fileExists(atPath: launchAgentPlistPath())
+    }
+    
+    private func setLaunchAtLogin(enabled: Bool) {
+        let plistPath = launchAgentPlistPath()
+        
+        if enabled {
+            let appPath = Bundle.main.bundlePath
+            let plistContent = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>Label</key>
+                <string>com.seonggi.bat-charge-gi</string>
+                <key>ProgramArguments</key>
+                <array>
+                    <string>/usr/bin/open</string>
+                    <string>\(appPath)</string>
+                </array>
+                <key>RunAtLoad</key>
+                <true/>
+            </dict>
+            </plist>
+            """
+            
+            // LaunchAgents 폴더 생성 (없을 수 있음)
+            let launchAgentsDir = (plistPath as NSString).deletingLastPathComponent
+            try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
+            
+            try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
+            print("LaunchAgent plist created: \(plistPath)")
+        } else {
+            try? FileManager.default.removeItem(atPath: plistPath)
+            print("LaunchAgent plist removed: \(plistPath)")
+        }
+    }
 }
+
 
 // MARK: - 전력 분배 배선 드로잉 (fork / merge / single)
 struct PowerFlowLines: View {

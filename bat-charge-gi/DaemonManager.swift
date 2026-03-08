@@ -99,10 +99,15 @@ class DaemonManager: ObservableObject {
             self.retryCount += 1
             self.logger.notice("Retrying daemon detection... (\(self.retryCount)/\(self.maxRetries))")
             
+            // 6회(30초) 실패 후, plist가 존재하면 launchctl로 데몬 강제 기동 시도 (암호 불필요)
+            if self.retryCount == 6 && self.isDaemonPlistInstalled {
+                self.logger.notice("Plist exists but daemon not responding. Attempting launchctl kickstart...")
+                self.kickstartDaemon()
+            }
+            
             if self.retryCount >= self.maxRetries {
                 self.stopRetryTimer()
                 self.logger.warning("Max retries reached. Daemon may not be installed.")
-                // plist가 있다면 설치는 되어있으므로 notInstalled로 전환하지 않음
                 if !self.isDaemonPlistInstalled {
                     DispatchQueue.main.async {
                         self.daemonState = .notInstalled
@@ -123,6 +128,27 @@ class DaemonManager: ObservableObject {
                     self.markAsRegistered()
                     ping.invalidate()
                 }
+            }
+        }
+    }
+    
+    /// plist가 이미 /Library/LaunchDaemons에 있을 때, 암호 없이 데몬을 강제 기동
+    private func kickstartDaemon() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            // launchctl kickstart는 이미 bootstrap된 서비스를 강제 기동 (암호 불필요)
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            task.arguments = ["kickstart", "-k", "system/com.seonggi.bat-charge-gi.helper"]
+            let pipe = Pipe()
+            task.standardOutput = pipe
+            task.standardError = pipe
+            do {
+                try task.run()
+                task.waitUntilExit()
+                let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                self.logger.notice("kickstart result: \(output)")
+            } catch {
+                self.logger.error("kickstart failed: \(error.localizedDescription)")
             }
         }
     }
@@ -161,6 +187,8 @@ class DaemonManager: ObservableObject {
                 </dict>
                 <key>RunAtLoad</key>
                 <true/>
+                <key>KeepAlive</key>
+                <true/>
             </dict>
             </plist>
             """
@@ -168,7 +196,14 @@ class DaemonManager: ObservableObject {
             let tmpPlistPath = "/tmp/com.seonggi.bat-charge-gi.helper.plist"
             try? plistContent.write(toFile: tmpPlistPath, atomically: true, encoding: .utf8)
             
-            let script = "do shell script \"cp \\\"\(tmpPlistPath)\\\" /Library/LaunchDaemons/ && chown root:wheel /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && launchctl load -w /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist\" with administrator privileges"
+            // ⚠ 핵심: launchctl bootstrap (현대식) 사용. load는 deprecated이며 재부팅 후 데몬이 안 뜸.
+            // 먼저 기존 서비스 강제 해제 후 다시 bootstrap
+            let script = "do shell script \"" +
+                "launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; " +
+                "cp \\\"\(tmpPlistPath)\\\" /Library/LaunchDaemons/ && " +
+                "chown root:wheel /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
+                "launchctl bootstrap system /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist" +
+                "\" with administrator privileges"
             var scriptError: NSDictionary?
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&scriptError)
@@ -177,7 +212,7 @@ class DaemonManager: ObservableObject {
                     DispatchQueue.main.async {
                         let alert = NSAlert()
                         alert.messageText = "백그라운드 제어 권한 획득 실패"
-                        alert.informativeText = "원인: \(err)\\n설정을 확인해주세요."
+                        alert.informativeText = "원인: \(err)\n설정을 확인해주세요."
                         alert.alertStyle = .critical
                         alert.addButton(withTitle: "확인")
                         alert.runModal()
@@ -194,7 +229,8 @@ class DaemonManager: ObservableObject {
             try service.unregister()
             logger.notice("Daemon successfully unregistered.")
         } catch {
-            let script = "do shell script \"launchctl unload -w /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && rm /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist\" with administrator privileges"
+            // ⚠ 핵심: launchctl bootout (현대식) 사용
+            let script = "do shell script \"launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; rm -f /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist\" with administrator privileges"
             var scriptError: NSDictionary?
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&scriptError)
