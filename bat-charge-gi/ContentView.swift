@@ -627,7 +627,7 @@ struct ContentView: View {
         let plistPath = launchAgentPlistPath()
         
         if enabled {
-            let appPath = Bundle.main.bundlePath
+            let executablePath = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
             let plistContent = """
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -637,8 +637,7 @@ struct ContentView: View {
                 <string>com.seonggi.bat-charge-gi</string>
                 <key>ProgramArguments</key>
                 <array>
-                    <string>/usr/bin/open</string>
-                    <string>\(appPath)</string>
+                    <string>\(executablePath)</string>
                 </array>
                 <key>RunAtLoad</key>
                 <true/>
@@ -651,10 +650,22 @@ struct ContentView: View {
             try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
             
             try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
-            print("LaunchAgent plist created: \(plistPath)")
+            
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            task.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
+            try? task.run()
+            
+            print("LaunchAgent plist created and bootstrapped: \(plistPath)")
         } else {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            task.arguments = ["bootout", "gui/\(getuid())", plistPath]
+            try? task.run()
+            task.waitUntilExit()
+            
             try? FileManager.default.removeItem(atPath: plistPath)
-            print("LaunchAgent plist removed: \(plistPath)")
+            print("LaunchAgent plist removed and bootout: \(plistPath)")
         }
     }
 }

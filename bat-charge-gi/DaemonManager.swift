@@ -168,7 +168,9 @@ class DaemonManager: ObservableObject {
             logger.error("SMAppService failed: \(error.localizedDescription). Trying Fallback...")
             
             // Xcode 서명이 완벽하지 않아 SMAppService가 실패할 경우 launchctl로 강제 등록
+            let privilegedPath = "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"
             let helperPath = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/com.seonggi.bat-charge-gi.helper").path
+            
             let plistContent = """
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -178,7 +180,7 @@ class DaemonManager: ObservableObject {
                 <string>com.seonggi.bat-charge-gi.helper</string>
                 <key>ProgramArguments</key>
                 <array>
-                    <string>\(helperPath)</string>
+                    <string>\(privilegedPath)</string>
                 </array>
                 <key>MachServices</key>
                 <dict>
@@ -196,12 +198,16 @@ class DaemonManager: ObservableObject {
             let tmpPlistPath = "/tmp/com.seonggi.bat-charge-gi.helper.plist"
             try? plistContent.write(toFile: tmpPlistPath, atomically: true, encoding: .utf8)
             
-            // ⚠ 핵심: launchctl bootstrap (현대식) 사용. load는 deprecated이며 재부팅 후 데몬이 안 뜸.
-            // 먼저 기존 서비스 강제 해제 후 다시 bootstrap
+            // ⚠ 보안 정책: launchd는 daemon 실행 파일이 root 소유이고 권한이 755여야만 부팅 시 실행을 허용합니다.
             let script = "do shell script \"" +
                 "launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; " +
+                "mkdir -p /Library/PrivilegedHelperTools/ && " +
+                "cp \\\"\(helperPath)\\\" \\\"\(privilegedPath)\\\" && " +
+                "chown root:wheel \\\"\(privilegedPath)\\\" && " +
+                "chmod 755 \\\"\(privilegedPath)\\\" && " +
                 "cp \\\"\(tmpPlistPath)\\\" /Library/LaunchDaemons/ && " +
                 "chown root:wheel /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
+                "chmod 644 /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
                 "launchctl bootstrap system /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist" +
                 "\" with administrator privileges"
             var scriptError: NSDictionary?
@@ -230,7 +236,7 @@ class DaemonManager: ObservableObject {
             logger.notice("Daemon successfully unregistered.")
         } catch {
             // ⚠ 핵심: launchctl bootout (현대식) 사용
-            let script = "do shell script \"launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; rm -f /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist\" with administrator privileges"
+            let script = "do shell script \"launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; rm -f /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist; rm -f /Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper\" with administrator privileges"
             var scriptError: NSDictionary?
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&scriptError)
