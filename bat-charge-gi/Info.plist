@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
-	<string>bat-charge-gi</string>
-	<key>CFBundleIconFile</key>
-	<string>AppIcon</string>
+	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.seonggi.bat-charge-gi</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>bat-charge-gi</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.8.1</string>
+	<string>2.8.2</string>
 	<key>CFBundleVersion</key>
-	<string>2.8.1</string>
+	<string>2.8.2</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSPrincipalClass</key>
@@ -27,6 +27,6 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/SeongGi/bat-charge-gi/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>blwAzAPZk/Gj+60KkK4g/kHiwB0g6qztH3qBBnpBkgs=</string>
+	<string>npsrXuHJQ78Ban4rBCX9pWE+l66IFkQ3YUwiMcrGspI=</string>
 </dict>
 </plist>
