@@ -15,9 +15,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.8.4</string>
+	<string>2.8.5</string>
 	<key>CFBundleVersion</key>
-	<string>2.8.4</string>
+	<string>2.8.5</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
@@ -27,6 +27,6 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/SeongGi/bat-charge-gi/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>blwAzAPZk/Gj+60KkK4g/kHiwB0g6qztH3qBBnpBkgs=</string>
+	<string>CpxqP6O8yovd8iFpx/tOqGz/y9Gve7c5Y4fR9X6fTjw=</string>
 </dict>
 </plist>

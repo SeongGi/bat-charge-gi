@@ -3,19 +3,19 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
         <item>
-            <title>Version 2.8.4</title>
+            <title>Version 2.8.5</title>
             <description><![CDATA[
             <ul>
-                <li>최신 버전 v2.8.4 릴리스</li>
+                <li>최신 버전 v2.8.5 릴리스</li>
             </ul>
             ]]></description>
-            <pubDate>Fri, 13 Mar 2026 23:24:14 +0900</pubDate>
-            <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.8.4/bat-charge-gi.dmg"
-                       sparkle:version="2.8.4"
-                       sparkle:shortVersionString="2.8.4"
+            <pubDate>Fri, 13 Mar 2026 23:27:06 +0900</pubDate>
+            <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v2.8.5/bat-charge-gi.dmg"
+                       sparkle:version="2.8.5"
+                       sparkle:shortVersionString="2.8.5"
                        type="application/octet-stream"
-                       length="2605303"
-                       sparkle:edSignature="bcBPewuOB0B0hekndSECK4KNe8/u/EiYt3deASfToUyuW/gH01DcelKRs+hiNqTAg/kV5L1IR/ugDIesp598CA==" />
+                       length="2605347"
+                       sparkle:edSignature="SUamH3fAB+cnZ9VJvYpTgmhddhQBZ0y0cRKgb9CJwBT/DRlQnKvRQsqzo8rdG92AuQpKjQJWFUefTuDvGnpsAw==" />
         </item>
     </channel>
 </rss>
