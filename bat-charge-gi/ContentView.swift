@@ -619,15 +619,22 @@ struct ContentView: View {
         return "\(home)/Library/LaunchAgents/com.seonggi.bat-charge-gi.plist"
     }
     
+    /// LaunchAgent plist 파일이 존재하면 '자동 실행' 설정이 된 것으로 간주 (ad-hoc 앱에서 가장 확실한 방법)
     private func isLaunchAtLoginEnabled() -> Bool {
-        return FileManager.default.fileExists(atPath: launchAgentPlistPath())
+        let plistPath = launchAgentPlistPath()
+        return FileManager.default.fileExists(atPath: plistPath)
     }
     
     private func setLaunchAtLogin(enabled: Bool) {
         let plistPath = launchAgentPlistPath()
         
         if enabled {
-            let executablePath = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
+            // resolvedPath: 심볼릭 링크 등 해소된 실제 앱 번들 경로 사용
+            // (앱이 Desktop, Downloads 등 임시 위치에서 실행된 경우에도 올바른 경로 기록)
+            let bundleURL = Bundle.main.bundleURL
+            let resolvedBundleURL = (try? URL(resolvingAliasFileAt: bundleURL)) ?? bundleURL
+            let executablePath = resolvedBundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
+            
             let plistContent = """
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -641,6 +648,8 @@ struct ContentView: View {
                 </array>
                 <key>RunAtLoad</key>
                 <true/>
+                <key>KeepAlive</key>
+                <false/>
             </dict>
             </plist>
             """
@@ -649,23 +658,33 @@ struct ContentView: View {
             let launchAgentsDir = (plistPath as NSString).deletingLastPathComponent
             try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
             
+            // 기존에 등록되어 있으면 먼저 bootout 후 재등록 (경로 변경 대응)
+            let bootoutTask = Process()
+            bootoutTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            bootoutTask.arguments = ["bootout", "gui/\(getuid())", plistPath]
+            try? bootoutTask.run()
+            bootoutTask.waitUntilExit()
+            
             try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
             
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            task.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
-            try? task.run()
+            // 등록 (bootstrap)
+            let bootstrapTask = Process()
+            bootstrapTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            bootstrapTask.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
+            try? bootstrapTask.run()
             
-            print("LaunchAgent plist created and bootstrapped: \(plistPath)")
+            print("LaunchAgent registered: \(executablePath)")
         } else {
+            // 해제 (bootout)
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             task.arguments = ["bootout", "gui/\(getuid())", plistPath]
             try? task.run()
             task.waitUntilExit()
             
+            // plist 삭제
             try? FileManager.default.removeItem(atPath: plistPath)
-            print("LaunchAgent plist removed and bootout: \(plistPath)")
+            print("LaunchAgent plist removed: \(plistPath)")
         }
     }
 }

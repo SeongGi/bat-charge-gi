@@ -99,19 +99,20 @@ class DaemonManager: ObservableObject {
             self.retryCount += 1
             self.logger.notice("Retrying daemon detection... (\(self.retryCount)/\(self.maxRetries))")
             
-            // 6회(30초) 실패 후, plist가 존재하면 launchctl로 데몬 강제 기동 시도 (암호 불필요)
-            if self.retryCount == 6 && self.isDaemonPlistInstalled {
+            // 3회(15초) 실패 후, plist가 존재하면 launchctl로 데몬 강제 기동 시도 (암호 불필요)
+            if self.retryCount == 3 && self.isDaemonPlistInstalled {
                 self.logger.notice("Plist exists but daemon not responding. Attempting launchctl kickstart...")
                 self.kickstartDaemon()
             }
             
             if self.retryCount >= self.maxRetries {
                 self.stopRetryTimer()
-                self.logger.warning("Max retries reached. Daemon may not be installed.")
-                if !self.isDaemonPlistInstalled {
-                    DispatchQueue.main.async {
-                        self.daemonState = .notInstalled
-                    }
+                self.logger.warning("Max retries reached. Daemon failed to respond. Switching to notInstalled.")
+                // ⚠️ 핵심 수정: plist 존재 여부와 관계없이 notInstalled로 전환
+                // → 사용자가 "재설치" 버튼을 볼 수 있음 ("연결 진행중" 무한 대기 방지)
+                DispatchQueue.main.async {
+                    self.daemonState = .notInstalled
+                    self.isDaemonRegistered = false
                 }
                 return
             }
@@ -145,8 +146,16 @@ class DaemonManager: ObservableObject {
             do {
                 try task.run()
                 task.waitUntilExit()
-                let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                self.logger.notice("kickstart result: \(output)")
+                
+                // 만약 kickstart가 실패하면(등록이 안 되어 있으면), bootstrap 시도 (root 권한 파일이 이미 /Library에 있으면 성공 가능함)
+                if task.terminationStatus != 0 {
+                    self.logger.notice("kickstart failed (code \(task.terminationStatus)). Trying bootstrap...")
+                    let bt = Process()
+                    bt.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+                    bt.arguments = ["bootstrap", "system", "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"]
+                    try? bt.run()
+                    bt.waitUntilExit()
+                }
             } catch {
                 self.logger.error("kickstart failed: \(error.localizedDescription)")
             }
