@@ -19,15 +19,19 @@ cask "bat-charge-gi" do
   ]
 
   postflight do
-    # 1. 모든 찌꺼기 속성 및 인터넷 격리(Quarantine) 속성 완전 제거
+    # 1. 모든 찌꺼기 속성 및 인터넷 격리(Quarantine) 속성 완전 제거 (가장 중요)
     system_command "xattr",
                    args: ["-cr", "#{appdir}/bat-charge-gi.app"],
                    sudo: false
     
-    # 2. 로컬 권한으로 앱 재서명 (Gatekeeper '손상된 앱' 에러 방지용)
-    system_command "codesign",
-                   args: ["--force", "--deep", "--sign", "-", "#{appdir}/bat-charge-gi.app"],
-                   sudo: false
+    # 2. 로컬 권한으로 앱 재서명 (에러 방지를 위해 --deep 제거)
+    begin
+      system_command "codesign",
+                     args: ["--force", "--sign", "-", "#{appdir}/bat-charge-gi.app"],
+                     sudo: false
+    rescue
+      # 서명 실패하더라도 설치는 계속 진행 (xattr만으로도 실행 가능)
+    end
   end
 
   caveats do
