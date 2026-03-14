@@ -1,6 +1,6 @@
 cask "bat-charge-gi" do
-  version "2.8.6"
-  sha256 "c7ea0f979c501f608ddebd862e6949ef10efece2c6bb02e1659b970479d5375a"
+  version "2.8.7"
+  sha256 :no_check
 
   url "https://github.com/SeongGi/bat-charge-gi/releases/download/v#{version}/bat-charge-gi.dmg"
   name "bat-charge-gi"
@@ -19,8 +19,14 @@ cask "bat-charge-gi" do
   ]
 
   postflight do
+    # 1. 모든 찌꺼기 속성 및 인터넷 격리(Quarantine) 속성 완전 제거
     system_command "xattr",
-                   args: ["-rd", "com.apple.quarantine", "#{appdir}/bat-charge-gi.app"],
+                   args: ["-cr", "#{appdir}/bat-charge-gi.app"],
+                   sudo: false
+    
+    # 2. 로컬 권한으로 앱 재서명 (Gatekeeper '손상된 앱' 에러 방지용)
+    system_command "codesign",
+                   args: ["--force", "--deep", "--sign", "-", "#{appdir}/bat-charge-gi.app"],
                    sudo: false
   end
 
