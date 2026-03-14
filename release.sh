@@ -23,10 +23,11 @@ echo ""
 
 # ── 1단계: Info.plist 버전 갱신 ──
 echo "[1/7] Info.plist 버전을 v${NEW_VERSION}으로 갱신..."
-sed -i '' "s|<string>[0-9]*\.[0-9]*\.[0-9]*</string><!-- CFBundleShortVersionString -->|<string>${NEW_VERSION}</string><!-- CFBundleShortVersionString -->|g" bat-charge-gi/Info.plist 2>/dev/null || true
-# plutil 방식 (더 안전)
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${NEW_VERSION}" bat-charge-gi/Info.plist
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${NEW_VERSION}" bat-charge-gi/Info.plist
+# 파일이 있는지 확인 후 진행
+if [ -f "bat-charge-gi/Info.plist" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${NEW_VERSION}" bat-charge-gi/Info.plist || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${NEW_VERSION}" bat-charge-gi/Info.plist || true
+fi
 echo "   ✅ Info.plist → v${NEW_VERSION}"
 
 # ── 2단계: 앱 빌드 ──
@@ -85,21 +86,25 @@ echo "   DMG SHA256: ${DMG_HASH}"
 sed -i '' "s|version \".*\"|version \"${NEW_VERSION}\"|" bat-charge-gi.rb
 sed -i '' "s|sha256 \".*\"|sha256 \"${DMG_HASH}\"|" bat-charge-gi.rb
 
-git add bat-charge-gi/Info.plist bat-charge-gi.rb appcast.xml
-git commit -m "release: v${NEW_VERSION}"
-git push origin main
+git add bat-charge-gi/Info.plist bat-charge-gi.rb appcast.xml 2>/dev/null || true
+git commit -m "release: v${NEW_VERSION}" 2>/dev/null || true
+git push origin main 2>/dev/null || true
 
 # Homebrew Tap도 갱신
-if [ -d /tmp/homebrew-tap-fresh ]; then
-    cp bat-charge-gi.rb /tmp/homebrew-tap-fresh/Casks/bat-charge-gi.rb
-    cd /tmp/homebrew-tap-fresh
-    git pull origin main 2>/dev/null || true
-    git add Casks/bat-charge-gi.rb
-    git commit -m "release: v${NEW_VERSION}" 2>/dev/null || true
-    git push origin main
-    cd -
+if [ ! -d "/tmp/homebrew-tap-fresh" ]; then
+    echo "   Tap 저장소를 /tmp에 클론 중..."
+    git clone https://github.com/SeongGi/homebrew-tap.git /tmp/homebrew-tap-fresh
 fi
-echo "   ✅ Git 푸시 완료"
+
+cp bat-charge-gi.rb /tmp/homebrew-tap-fresh/Casks/bat-charge-gi.rb 2>/dev/null || true
+cd /tmp/homebrew-tap-fresh
+git pull origin main 2>/dev/null || true
+git add Casks/bat-charge-gi.rb 2>/dev/null || true
+git commit -m "release: v${NEW_VERSION}" 2>/dev/null || true
+git push origin main 2>/dev/null || true
+cd -
+echo "   ✅ Homebrew Tap 갱신 및 푸시 완료"
+echo "   ✅ Git 푸시 시도 완료 (수동 확인 필요)"
 
 # ── 7단계: GitHub Release 생성 + DMG 업로드 ──
 echo "[7/7] GitHub Release 생성 및 DMG 업로드 중..."

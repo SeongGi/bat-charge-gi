@@ -18,7 +18,15 @@ cask "bat-charge-gi" do
     "~/Library/Application Support/bat-charge-gi"
   ]
 
+  postflight do
+    system_command "xattr",
+                   args: ["-rd", "com.apple.quarantine", "#{appdir}/bat-charge-gi.app"],
+                   sudo: false
+  end
+
   caveats do
-    "이 앱은 배터리 제어를 위해 루트 권한 백그라운드 헬퍼(SMAppService)를 사용합니다. 최초 실행 시 '코어 업데이트'를 통한 권한 허용이 필요합니다."
+    "이 앱은 배터리 제어를 위해 루트 권한 백그라운드 헬퍼(SMAppService)를 사용합니다.\n" +
+    "최초 실행 시 '백그라운드 제어 권한 허용' 버튼을 눌러 승인이 필요합니다.\n" +
+    "Gatekeeper 차단을 자동으로 해제하도록 설정되었습니다."
   end
 end
