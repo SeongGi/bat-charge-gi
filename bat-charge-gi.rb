@@ -1,5 +1,5 @@
 cask "bat-charge-gi" do
-  version "2.8.7"
+  version "2.8.8"
   sha256 :no_check
 
   url "https://github.com/SeongGi/bat-charge-gi/releases/download/v#{version}/bat-charge-gi.dmg"
@@ -9,7 +9,6 @@ cask "bat-charge-gi" do
 
   app "bat-charge-gi.app"
 
-  # Helper 데몬 삭제를 위한 uninstall 구문 (사용자 편의성 제공)
   uninstall launchctl: "com.seonggi.bat-charge-gi.helper",
             delete:    "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"
 
@@ -19,24 +18,14 @@ cask "bat-charge-gi" do
   ]
 
   postflight do
-    # 1. 모든 찌꺼기 속성 및 인터넷 격리(Quarantine) 속성 완전 제거 (가장 중요)
+    # 앱 번들을 망가뜨리지 않고 게이트키퍼만 안전하게 해제합니다.
     system_command "xattr",
                    args: ["-cr", "#{appdir}/bat-charge-gi.app"],
                    sudo: false
-    
-    # 2. 로컬 권한으로 앱 재서명 (에러 방지를 위해 --deep 제거)
-    begin
-      system_command "codesign",
-                     args: ["--force", "--sign", "-", "#{appdir}/bat-charge-gi.app"],
-                     sudo: false
-    rescue
-      # 서명 실패하더라도 설치는 계속 진행 (xattr만으로도 실행 가능)
-    end
   end
 
   caveats do
     "이 앱은 배터리 제어를 위해 루트 권한 백그라운드 헬퍼(SMAppService)를 사용합니다.\n" +
-    "최초 실행 시 '백그라운드 제어 권한 허용' 버튼을 눌러 승인이 필요합니다.\n" +
-    "Gatekeeper 차단을 자동으로 해제하도록 설정되었습니다."
+    "최초 실행 시 '백그라운드 제어 권한 허용' 버튼을 눌러 승인이 필요합니다."
   end
 end
