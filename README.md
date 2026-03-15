@@ -105,6 +105,10 @@ brew reinstall --cask --no-quarantine bat-charge-gi
 2. DMG 파일을 열고 앱을 `Applications` 폴더로 드래그
 3. 최초 실행 시 macOS가 차단하면: **시스템 설정 → 개인 정보 보호 및 보안 → "확인 없이 열기"** 클릭
 4. 앱 내 "백그라운드 제어 권한 허용" 버튼을 클릭하여 Helper 데몬 설치
+5. **(앱이 열리지 않거나 차단될 경우)**: 터미널을 열고 아래 명령어를 입력하여 macOS 보안 차단을 강제로 해제합니다.
+   ```bash
+   sudo xattr -rd com.apple.quarantine /Applications/bat-charge-gi.app
+   ```
 
 ---
 
