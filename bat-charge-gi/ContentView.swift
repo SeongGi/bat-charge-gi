@@ -421,7 +421,13 @@ struct ContentView: View {
         .padding()
         .frame(width: 340)
         .onAppear {
-            launchAtLogin = isLaunchAtLoginEnabled()
+            // 1단계: 실제 시스템 상태(파일 존재여부)를 최우선으로 반영
+            let actualStatus = isLaunchAtLoginEnabled()
+            launchAtLogin = actualStatus
+            
+            // 2단계: UserDefaults에도 현재 상태 기록 (동기화)
+            UserDefaults.standard.set(actualStatus, forKey: "UserIntent_LaunchAtLogin")
+            
             fetchChargeLimit()
             fetchExtraBatteryInfo()
             
@@ -626,6 +632,7 @@ struct ContentView: View {
     }
     
     private func setLaunchAtLogin(enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "UserIntent_LaunchAtLogin")
         let plistPath = launchAgentPlistPath()
         
         if enabled {

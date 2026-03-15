@@ -24,10 +24,13 @@ class DaemonManager: ObservableObject {
     private var retryTimer: Timer?
     private var retryCount: Int = 0
     private let maxRetries: Int = 24  // 최대 24회 = 약 2분
+    private let registerLock = NSLock()
     
     /// 재부팅 후에도 LaunchDaemon plist가 존재하는지 확인
     private var isDaemonPlistInstalled: Bool {
-        FileManager.default.fileExists(atPath: "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist")
+        let plistExists = FileManager.default.fileExists(atPath: "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist")
+        let binExists = FileManager.default.fileExists(atPath: "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper")
+        return plistExists && binExists
     }
     
     private init() {
@@ -91,25 +94,35 @@ class DaemonManager: ObservableObject {
     
     /// 재부팅 직후 데몬 지연 기동을 감지하기 위한 주기적 재시도 타이머
     private func startRetryTimer() {
+        self.registerLock.lock()
+        defer { self.registerLock.unlock() }
+        
         // 이미 타이머가 돌고 있거나, 최대 재시도 횟수 초과 시 중단
         guard retryTimer == nil, retryCount < maxRetries else { return }
         
         retryTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] timer in
             guard let self = self else { timer.invalidate(); return }
-            self.retryCount += 1
-            self.logger.notice("Retrying daemon detection... (\(self.retryCount)/\(self.maxRetries))")
             
-            // 3회(15초) 실패 후, plist가 존재하면 launchctl로 데몬 강제 기동 시도 (암호 불필요)
-            if self.retryCount == 3 && self.isDaemonPlistInstalled {
-                self.logger.notice("Plist exists but daemon not responding. Attempting launchctl kickstart...")
+            self.registerLock.lock()
+            self.retryCount += 1
+            let currentCount = self.retryCount
+            self.registerLock.unlock()
+            
+            self.logger.notice("Retrying daemon detection... (\(currentCount)/\(self.maxRetries))")
+            
+            // 3회(약 15초) 실패 후, plist가 존재하면 launchctl로 데몬 강제 기동 시도 (암호 불필요)
+            if currentCount == 3 && self.isDaemonPlistInstalled {
+                self.logger.notice("Plist exists but daemon not responding. Attempting kickstart...")
                 self.kickstartDaemon()
+                // 킥스타트 후 즉시 재연결 시도
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.checkDaemonStatus()
+                }
             }
             
-            if self.retryCount >= self.maxRetries {
+            if currentCount >= self.maxRetries {
                 self.stopRetryTimer()
-                self.logger.warning("Max retries reached. Daemon failed to respond. Switching to notInstalled.")
-                // ⚠️ 핵심 수정: plist 존재 여부와 관계없이 notInstalled로 전환
-                // → 사용자가 "재설치" 버튼을 볼 수 있음 ("연결 진행중" 무한 대기 방지)
+                self.logger.warning("Max retries reached. Daemon failed to respond.")
                 DispatchQueue.main.async {
                     self.daemonState = .notInstalled
                     self.isDaemonRegistered = false
@@ -178,7 +191,10 @@ class DaemonManager: ObservableObject {
             
             // Xcode 서명이 완벽하지 않아 SMAppService가 실패할 경우 launchctl로 강제 등록
             let privilegedPath = "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"
+            let privilegedSmcPath = "/Library/PrivilegedHelperTools/smc"
+            
             let helperPath = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/com.seonggi.bat-charge-gi.helper").path
+            let smcPath = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/smc").path
             
             let plistContent = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -200,6 +216,10 @@ class DaemonManager: ObservableObject {
                 <true/>
                 <key>KeepAlive</key>
                 <true/>
+                <key>StandardOutPath</key>
+                <string>/tmp/com.seonggi.bat-charge-gi.helper.out.log</string>
+                <key>StandardErrorPath</key>
+                <string>/tmp/com.seonggi.bat-charge-gi.helper.err.log</string>
             </dict>
             </plist>
             """
@@ -207,13 +227,13 @@ class DaemonManager: ObservableObject {
             let tmpPlistPath = "/tmp/com.seonggi.bat-charge-gi.helper.plist"
             try? plistContent.write(toFile: tmpPlistPath, atomically: true, encoding: .utf8)
             
-            // ⚠ 보안 정책: launchd는 daemon 실행 파일이 root 소유이고 권한이 755여야만 부팅 시 실행을 허용합니다.
             let script = "do shell script \"" +
                 "launchctl bootout system/com.seonggi.bat-charge-gi.helper 2>/dev/null; " +
                 "mkdir -p /Library/PrivilegedHelperTools/ && " +
                 "cp \\\"\(helperPath)\\\" \\\"\(privilegedPath)\\\" && " +
-                "chown root:wheel \\\"\(privilegedPath)\\\" && " +
-                "chmod 755 \\\"\(privilegedPath)\\\" && " +
+                "cp \\\"\(smcPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
+                "chown root:wheel \\\"\(privilegedPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
+                "chmod 755 \\\"\(privilegedPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
                 "cp \\\"\(tmpPlistPath)\\\" /Library/LaunchDaemons/ && " +
                 "chown root:wheel /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
                 "chmod 644 /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +

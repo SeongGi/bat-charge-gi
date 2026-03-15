@@ -79,20 +79,25 @@ class SMCManager {
     private var isClamshellSleepPrevented: Bool = false
     
     init() {
+        // 1. 우선적으로 같은 실행 파일 옆에 smc가 있는지 확인 (Helper 데몬용)
         if let executableURL = Bundle.main.executableURL {
-            let path = executableURL.deletingLastPathComponent().appendingPathComponent("smc").path
-            if FileManager.default.fileExists(atPath: path) {
-                self.smcPath = path
-            } else {
-                let fallbacks = [
-                    "/Applications/bat-charge-gi.app/Contents/MacOS/smc",
-                    "/Users/seonggi/Desktop/PDS/dev/battery/bat-charge-gi/bat-charge-gi.app/Contents/MacOS/smc"
-                ]
-                self.smcPath = fallbacks.first(where: { FileManager.default.fileExists(atPath: $0) }) ?? "/Library/Application Support/bat-charge-gi/smc"
+            let localSmc = executableURL.deletingLastPathComponent().appendingPathComponent("smc").path
+            if FileManager.default.fileExists(atPath: localSmc) {
+                self.smcPath = localSmc
             }
-        } else {
-            self.smcPath = "/Applications/bat-charge-gi.app/Contents/MacOS/smc"
         }
+        
+        // 2. 위에서 못 찾았으면 표준 경로들 확인
+        if self.smcPath.isEmpty {
+            let fallbacks = [
+                "/Library/PrivilegedHelperTools/smc",
+                "/Applications/bat-charge-gi.app/Contents/MacOS/smc",
+                "/usr/local/bin/smc"
+            ]
+            self.smcPath = fallbacks.first(where: { FileManager.default.fileExists(atPath: $0) }) ?? "/Applications/bat-charge-gi.app/Contents/MacOS/smc"
+        }
+        
+        print("[SMCManager] Using smc path: \(self.smcPath)")
         
         // CHTE (M2/M3) 지원 여부 체크
         let chteRes = runSMC(args: ["-k", "CHTE", "-r"])

@@ -15,17 +15,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			0lAi/AcXr6NpsZ8l3JTyYMNET+w=
+			Js+Q1vRyHRHvE0ga8ptW9lYL56c=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"d25022fc0717afa369b19f25dc94f260c3444fec" or cdhash H"28c5fa09b5d99f676007c4677ab976fcc879ad86"</string>
-		</dict>
-		<key>Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist</key>
-		<dict>
-			<key>hash2</key>
-			<data>
-			s2awQnc9wKzA5BtoVyUzFTR9PJW0W/IaC1CnsGfi7WE=
-			</data>
+			<string>cdhash H"26cf90d6f4721d11ef13481af29b56f6560be7a7" or cdhash H"35740a5ab8dd0ff0ed9b20192427df06ed2e2d24"</string>
 		</dict>
 		<key>MacOS/com.seonggi.bat-charge-gi.helper</key>
 		<dict>

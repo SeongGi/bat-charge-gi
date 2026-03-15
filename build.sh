@@ -1,58 +1,52 @@
 #!/bin/bash
+# ==========================================================
+# bat-charge-gi 완벽 복구 및 자동 프레임워크 교체 빌드 (v2.8.8+)
+# ==========================================================
 set -e
 
 APP_NAME="bat-charge-gi"
 BUNDLE="bat-charge-gi.app"
+BUNDLE_ID="com.seonggi.bat-charge-gi"
 
-echo "Building Helper Daemon..."
-mkdir -p .swift_cache
-export TMPDIR=$(pwd)/.swift_cache
-export DARWIN_USER_TEMP_DIR=$(pwd)/.swift_cache
-export DARWIN_USER_CACHE_DIR=$(pwd)/.swift_cache
+echo "1. 🚑 Checking Sparkle Framework..."
+# 프레임워크가 없거나 망가졌다면 새로 받습니다.
+if [ ! -d "Sparkle_Framework/Sparkle.framework" ] || ([ -d "Sparkle_Framework/Sparkle.framework/Versions/Current" ] && [ ! -L "Sparkle_Framework/Sparkle.framework/Versions/Current" ]); then
+    echo "   ⚠️ Framework missing or corrupted! Downloading fresh Sparkle..."
+    rm -rf Sparkle_Framework sparkle.tar.xz || true
+    mkdir -p Sparkle_Framework
+    # Sparkle 2.x 정식 릴리스 다운로드
+    curl -L https://github.com/sparkle-project/Sparkle/releases/download/2.5.2/Sparkle-2.5.2.tar.xz -o sparkle.tar.xz
+    tar -xf sparkle.tar.xz -C Sparkle_Framework/
+    rm sparkle.tar.xz
+    echo "   ✅ Fresh Sparkle Downloaded and Extracted."
+fi
 
-rm -rf "${BUNDLE}/Contents/MacOS"
+# 소스 경로 권한 및 보안 속성 제거
+sudo xattr -cr Sparkle_Framework/Sparkle.framework || true
+
+echo "2. Cleaning up old build..."
+rm -rf "${BUNDLE}"
 mkdir -p "${BUNDLE}/Contents/MacOS"
 mkdir -p "${BUNDLE}/Contents/Resources"
+mkdir -p "${BUNDLE}/Contents/Frameworks"
 
+echo "3. Injecting Info.plist & Assets..."
 cp bat-charge-gi/Info.plist "${BUNDLE}/Contents/Info.plist"
-
-# 앱 시스템 아이콘 이식
-echo "Injecting AppIcon Asset..."
 cp AppIcon.icns "${BUNDLE}/Contents/Resources/AppIcon.icns"
-
-# SMC 바이너리 추출
-echo "Fetching SMC Utility..."
-curl -sL https://raw.githubusercontent.com/actuallymentor/battery/main/dist/smc -o "${BUNDLE}/Contents/MacOS/smc"
+if [ ! -f "smc_cache" ]; then
+    curl -sL https://raw.githubusercontent.com/actuallymentor/battery/main/dist/smc -o "smc_cache"
+fi
+cp "smc_cache" "${BUNDLE}/Contents/MacOS/smc"
 chmod +x "${BUNDLE}/Contents/MacOS/smc"
 
-echo "Compiling Helper Daemon..."
+echo "4. Compiling Helper Daemon..."
+mkdir -p .swift_cache
 swiftc BatteryHelper/main.swift BatteryHelper/BatteryHelper.swift BatteryHelper/SMCManager.swift Shared/BatteryHelperProtocol.swift \
     -o helper_bin -module-cache-path .swift_cache -target arm64-apple-macosx13.0 \
     -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker BatteryHelper/Info.plist
 cp helper_bin "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper"
 
-# SMAppService를 위한 Plist 복제
-mkdir -p "${BUNDLE}/Contents/Library/LaunchDaemons"
-cat <<EOF > "${BUNDLE}/Contents/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.seonggi.bat-charge-gi.helper</string>
-    <key>BundleProgram</key>
-    <string>MacOS/com.seonggi.bat-charge-gi.helper</string>
-    <key>MachServices</key>
-    <dict>
-        <key>com.seonggi.bat-charge-gi.helper</key>
-        <true/>
-    </dict>
-</dict>
-</plist>
-EOF
-
-echo "Building Main App..."
-# Sparkle은 프레임워크에 이미 서명이 되어 있으므로, 굳이 다시 서명하지 않고 링크만 정확히 합니다.
+echo "5. Building Main App..."
 swiftc \
     bat-charge-gi/bat-charge-giApp.swift \
     bat-charge-gi/ContentView.swift \
@@ -62,21 +56,23 @@ swiftc \
     -o main_bin -module-cache-path .swift_cache -target arm64-apple-macosx13.0 \
     -F Sparkle_Framework -framework Sparkle \
     -Xlinker -rpath -Xlinker @executable_path/../Frameworks
-
 cp main_bin "${BUNDLE}/Contents/MacOS/${APP_NAME}"
 
-echo "Embedding Sparkle Framework..."
-mkdir -p "${BUNDLE}/Contents/Frameworks"
-rm -rf "${BUNDLE}/Contents/Frameworks/Sparkle.framework"
-cp -a Sparkle_Framework/Sparkle.framework "${BUNDLE}/Contents/Frameworks/"
+echo "6. Embedding Framework (Using ditto to preserve links)..."
+ditto Sparkle_Framework/Sparkle.framework "${BUNDLE}/Contents/Frameworks/Sparkle.framework"
 
-echo "Finalizing App (No Deep Signing to avoid bundle corruption)..."
-# 찌꺼기 제거 및 최소한의 서명만 수행
-xattr -cr "${BUNDLE}"
+echo "7. Final Signing (Inner-to-Outer)..."
+xattr -cr "${BUNDLE}" || true
+codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" || true
+codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app" || true
+codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle" || true
 codesign --force --sign - "${BUNDLE}/Contents/MacOS/smc" || true
 codesign --force --sign - "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper" || true
 codesign --force --sign - "${BUNDLE}/Contents/MacOS/bat-charge-gi" || true
 codesign --force --sign - "${BUNDLE}"
 
-rm -f helper_bin main_bin smc_bin
-echo "Build Complete (Clean State)!"
+rm -f helper_bin main_bin
+echo "--------------------------------------------------"
+echo "✅ CLEAN BUILD SUCCESSFUL!"
+echo "Now run the sudo installation commands provided above."
+echo "--------------------------------------------------"
