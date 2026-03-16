@@ -912,10 +912,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			yNfU/frbWEDznT/Ny6n/o8WBuLY=
+			bSmOt2oGzLboKV2dFBfCvajAlTA=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"c8d7d4fdfadb5840f39d3fcdcba9ffa3c581b8b6" or cdhash H"1989c0608a502931e2eb1421065ac29175bfb246"</string>
+			<string>cdhash H"6d298eb76a06ccb6e8295d9d1417c2bda8c09530" or cdhash H"3a84cd05a5d1d305eb9ed06ef137e6b1b3d53682"</string>
 		</dict>
 		<key>Headers/SPUDownloadData.h</key>
 		<dict>
@@ -2053,28 +2053,28 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			Lufq0EAkI9TUdJttleThiwUe1gY=
+			hymxlQNyHBgVEOSylcQ+8nrXMTA=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"2ee7ead0402423d4d4749b6d95e4e18b051ed606" or cdhash H"380be738d82df0134065cc362fa918fff80aa788"</string>
+			<string>cdhash H"8729b19503721c181510e4b295c43ef27ad73130" or cdhash H"098442870b7c96ed468db613a729656dd3382186"</string>
 		</dict>
 		<key>XPCServices/Downloader.xpc</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			DmeCVyDuqSazNOLgB3JvLdJl/ME=
+			YFeoltKvsyKm2wceTj06FHcIrHY=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"0e67825720eea926b334e2e007726f2dd265fcc1" or cdhash H"cc5d62e0acf5c5446453865a5cb255cc52634d51"</string>
+			<string>cdhash H"6057a896d2afb322a6db071e4e3d3a147708ac76" or cdhash H"9a9b99abba1ab8ddd2b80d0d7b9cc311b67ff346"</string>
 		</dict>
 		<key>XPCServices/Installer.xpc</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			qeeuueLCmvBRFAzMHAIFZqoiwRk=
+			Iqf5KQ1AKc3KnbC/q3xywhggtPs=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"a9e7aeb9e2c29af051140ccc1c020566aa22c119" or cdhash H"6bee09d5e8ff23b7968bc43da8f2d9052c902989"</string>
+			<string>cdhash H"22a7f9290d4029cdca9db0bfab7c72c21820b4fb" or cdhash H"a4681b1c62ff53cfef7d677bbab136fa38e6daab"</string>
 		</dict>
 	</dict>
 	<key>rules</key>

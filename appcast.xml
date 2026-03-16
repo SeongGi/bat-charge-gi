@@ -3,6 +3,57 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.0.5</title>
+             <description><![CDATA[
+             <ul>
+                 <li>앱 시작 및 메뉴바 아이콘 로직 완전히 초기화하여 안정성 확보</li>
+                 <li>좀비 프로세스로 인한 실행 불가 문제 해결</li>
+                 <li>타 PC 호환성 모드 강화</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 11:15:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.5/bat-charge-gi.dmg"
+                        sparkle:version="3.0.5"
+                        sparkle:shortVersionString="3.0.5"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
+         <item>
+             <title>Version 3.0.4</title>
+             <description><![CDATA[
+             <ul>
+                 <li>메뉴바 아이콘 출력 안정성 대폭 강화</li>
+                 <li>중복 실행 방지 로직 개선 (앱이 켜지지 않던 현상 수정)</li>
+                 <li>타 PC 설치 시 보안 격리 이슈 자동 알림 추가</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 11:10:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.4/bat-charge-gi.dmg"
+                        sparkle:version="3.0.4"
+                        sparkle:shortVersionString="3.0.4"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
+         <item>
+             <title>Version 3.0.3</title>
+             <description><![CDATA[
+             <ul>
+                 <li>메뉴바 아이콘 및 퍼센트 표시 복구 (긴급 수정)</li>
+                 <li>앱 실행 안정성 강화 (윈도우 충돌 로직 제거)</li>
+                 <li>빌드 경고 해결 및 최적화</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 11:05:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.3/bat-charge-gi.dmg"
+                        sparkle:version="3.0.3"
+                        sparkle:shortVersionString="3.0.3"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
+         <item>
              <title>Version 3.0.2</title>
              <description><![CDATA[
              <ul>

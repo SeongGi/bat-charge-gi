@@ -15,28 +15,28 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			t8pmuXxLqkzRnGytWPVuxl8JykE=
+			Jxy/N/35C3Rkk3SK6XY2AParVBY=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"b7ca66b97c4baa4cd19c6cad58f56ec65f09ca41" or cdhash H"34e3fd53f41a097fd4dfcf80b57984f053f9d684"</string>
+			<string>cdhash H"271cbf37fdf90b746493748ae9763600f6ab5416" or cdhash H"4b098e6f0ed207c9bbc129d9ec6260657ed98843"</string>
 		</dict>
 		<key>MacOS/com.seonggi.bat-charge-gi.helper</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			VuHRiY3pYJNcG9XuwaP5/tIvqiQ=
+			VN56PiM3KVjDwORoES64fZVfzkI=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"56e1d1898de960935c1bd5eec1a3f9fed22faa24"</string>
+			<string>cdhash H"54de7a3e23372958c3c0e468112eb87d955fce42"</string>
 		</dict>
 		<key>MacOS/smc</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			BZbQmUVAyfiHbxPQSVizbRFhzpA=
+			ej2+IGdUzy30gm8jEAGBlIlZlBo=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"0596d0994540c9f8876f13d04958b36d1161ce90"</string>
+			<string>cdhash H"7a3dbe206754cf2df4826f23100181948959941a"</string>
 		</dict>
 		<key>Resources/AppIcon.icns</key>
 		<dict>
