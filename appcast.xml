@@ -3,6 +3,23 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.0.2</title>
+             <description><![CDATA[
+             <ul>
+                 <li>타 PC 설치 시 상단 바 아이콘 미출력 현상 수정 (격리 권한 자동 해제)</li>
+                 <li>앱 아이콘 및 메뉴바 스타일 안정화</li>
+                 <li>백그라운드 통신 성능 개선</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 10:25:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.2/bat-charge-gi.dmg"
+                        sparkle:version="3.0.2"
+                        sparkle:shortVersionString="3.0.2"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
+         <item>
              <title>Version 3.0.1</title>
              <description><![CDATA[
              <ul>
