@@ -6,11 +6,12 @@ struct bat_charge_giApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        Settings {
+        // 하얀 화면 방지: Settings 창이 불필요하게 뜨지 않도록 처리
+        Settings { 
             EmptyView()
         }
         
-        // 대시보드 창은 명시적으로 부를 때만 띄우도록 설정
+        // 대시보드는 필요할 때만 호출 (기본적으로는 숨김)
         Window("고급 배터리 통계", id: "dashboard") {
             DashboardView()
         }
@@ -23,23 +24,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var timer: Timer?
     var updaterController: SPUStandardUpdaterController!
     
+    // App Nap 방지용 활동 토큰
+    var activity: NSObjectProtocol?
+    
     func applicationDidFinishLaunching(_ notification: Notification) {
-        print("[App] Launching...")
+        // App Nap 방지: 시스템이 앱을 절전 상태로 만드는 것을 막아 아이콘 선명도 유지
+        activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .background], reason: "Keeping menu bar icon active")
         
-        // 1. 메뉴바 아이콘 즉시 생성 (최우선 순위)
+        // 1. 메뉴바 아이콘 즉시 생성
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem?.button {
-            // 기본 아이콘 설정
+            button.isEnabled = true
             let img = NSImage(systemSymbolName: "battery.100.bolt", accessibilityDescription: "Battery Manager")
             img?.isTemplate = true
             button.image = img
             button.target = self
             button.action = #selector(togglePopover(_:))
-            print("[App] Status Item Created")
         }
         
-        // 2. 팝업 뷰 초기화
+        // 2. 팝업 뷰 초기화 (기존 프로퍼티 방식 복구)
         var contentView = ContentView()
         contentView.onUpdateCheck = { [weak self] in
             self?.updaterController.checkForUpdates(nil)
@@ -50,18 +54,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 3. 업데이트 컨트롤러 초기화
         updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
         
-        // 4. 아이콘 실시간 업데이트 타이머
-        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // 4. 아이콘 주기적 업데이트 (10초)
+        timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
             self?.updateBatteryIcon()
         }
-        updateBatteryIcon() // 즉시 한 번 실행
+        updateBatteryIcon()
         
-        // 5. 데몬 연결 확인
+        // 5. 데몬 상태 확인
         DaemonManager.shared.checkDaemonStatus()
     }
     
     @objc func updateBatteryIcon() {
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .userInitiated).async {
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
             task.arguments = ["-g", "batt"]
@@ -94,6 +98,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     DispatchQueue.main.async {
                         guard let button = self.statusItem?.button else { return }
                         
+                        // 항상 아이콘이 흐려지지 않도록 명시적으로 활성화
+                        button.isEnabled = true
+                        
                         let iconName: String
                         if isCharging { iconName = "bolt.fill" }
                         else if isOnAC { iconName = "powerplug.fill" }
@@ -109,7 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 }
             } catch {
-                print("Icon update failed: \(error)")
+                print("Update failed: \(error)")
             }
         }
     }
