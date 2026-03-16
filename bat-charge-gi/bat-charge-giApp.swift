@@ -6,8 +6,8 @@ struct bat_charge_giApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        // 대시보드 창만 정의 (필요할 때만 호출)
-        Window("고급 배터리 통계", id: "dashboard") {
+        // WindowGroup으로 변경하여 시작 시 자동 오픈 방지 (id로만 호출)
+        WindowGroup(id: "dashboard") {
             DashboardView()
         }
     }
@@ -57,6 +57,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 5. 데몬 상태 확인
         DaemonManager.shared.checkDaemonStatus()
+        
+        // 6. 시작 시 불필요하게 뜬 모든 창 닫기 (메뉴바 앱 전용)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NSApplication.shared.windows.forEach { window in
+                // 메뉴바 팝업(NSPanel)이나 스파클 업데이트 창이 아닌 경우에만 닫음
+                if window.title == "고급 배터리 통계" || window.identifier?.rawValue == "dashboard" {
+                    window.close()
+                }
+            }
+        }
     }
     
     @objc func updateBatteryIcon() {

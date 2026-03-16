@@ -3,6 +3,22 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.0.9</title>
+             <description><![CDATA[
+             <ul>
+                 <li>앱 실행 시 '고급 배터리 통계' 창이 자동으로 뜨던 현상을 수정했습니다.</li>
+                 <li>이제 통계 창은 '고급 통계' 버튼을 누를 때만 나타납니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 14:15:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.9/bat-charge-gi.dmg"
+                        sparkle:version="3.0.9"
+                        sparkle:shortVersionString="3.0.9"
+                        type="application/octet-stream"
+                        length="1419509"
+                        sparkle:edSignature="/zd2xJO52h9SyUG5VH9VP26Dg+IaHKR+7hbf/6OX+Z0ogwFqA0rRglwx3UTPgKoV4UTO1FzEUsnunxJhD+5sAA==" />
+         </item>
+         <item>
              <title>Version 3.0.8</title>
              <description><![CDATA[
              <ul>
