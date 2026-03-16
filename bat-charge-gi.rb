@@ -1,3 +1,4 @@
+cask "bat-charge-gi" do
   version "3.0.7"
   sha256 "6d5c38a627fbb1d4445f6b761cf96cbfc909feed8fc524ff85ace303c18e40ed"
 
