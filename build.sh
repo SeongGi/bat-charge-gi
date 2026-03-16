@@ -63,13 +63,13 @@ ditto Sparkle_Framework/Sparkle.framework "${BUNDLE}/Contents/Frameworks/Sparkle
 
 echo "7. Final Signing (Inner-to-Outer)..."
 xattr -cr "${BUNDLE}" || true
-codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" || true
-codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app" || true
-codesign --force --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle" || true
-codesign --force --sign - "${BUNDLE}/Contents/MacOS/smc" || true
-codesign --force --sign - "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper" || true
-codesign --force --sign - "${BUNDLE}/Contents/MacOS/bat-charge-gi" || true
-codesign --force --sign - "${BUNDLE}"
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/smc" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/bat-charge-gi" || true
+codesign --force --deep --options runtime --sign - "${BUNDLE}"
 
 rm -f helper_bin main_bin
 echo "--------------------------------------------------"

@@ -2,6 +2,23 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
         <title>bat-charge-gi 업데이트</title>
+         <item>
+             <title>Version 3.0.1</title>
+             <description><![CDATA[
+             <ul>
+                 <li>재부팅 시 연결 지연 및 무한 대기 버그 수정</li>
+                 <li>로그인 시 자동 실행 설정 유지 신뢰성 향상</li>
+                 <li>'게이트키퍼 권한 복구' 기능 추가 (앱 손상 오류 대응)</li>
+             </ul>
+             ]]></description>
+             <pubDate>Sun, 16 Mar 2026 10:00:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.1/bat-charge-gi.dmg"
+                        sparkle:version="3.0.1"
+                        sparkle:shortVersionString="3.0.1"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
         <item>
             <title>Version 2.8.8</title>
             <description><![CDATA[

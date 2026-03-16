@@ -149,7 +149,14 @@ class DaemonManager: ObservableObject {
     /// plist가 이미 /Library/LaunchDaemons에 있을 때, 암호 없이 데몬을 강제 기동
     private func kickstartDaemon() {
         DispatchQueue.global(qos: .userInitiated).async {
-            // launchctl kickstart는 이미 bootstrap된 서비스를 강제 기동 (암호 불필요)
+            // 1. 데몬 바이너리에 Gatekeeper 해제 적용 (root 권한 파일이어도 적용 가능)
+            let fixXattr = Process()
+            fixXattr.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+            fixXattr.arguments = ["-cr", "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"]
+            try? fixXattr.run()
+            fixXattr.waitUntilExit()
+
+            // 2. launchctl kickstart는 이미 bootstrap된 서비스를 강제 기동 (암호 불필요)
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             task.arguments = ["kickstart", "-k", "system/com.seonggi.bat-charge-gi.helper"]

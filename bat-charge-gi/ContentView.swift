@@ -22,6 +22,8 @@ struct ContentView: View {
     @State private var isOnACPower: Bool = false
     @State private var batteryPercent: Int = 0
     @State private var showingClamshellWarning = false
+    @State private var connectionRetryTime: Int = 0
+    @State private var isRepairing: Bool = false
     
     var onUpdateCheck: (() -> Void)? = nil
     
@@ -375,8 +377,17 @@ struct ContentView: View {
                         ProgressView().controlSize(.small)
                         Text("백엔드 코어 연결 중...").font(.caption).foregroundColor(.orange)
                     }
-                    Text("재부팅 직후 잠시 대기합니다. 잠시만 기다려주세요.")
-                        .font(.caption2).foregroundColor(.secondary)
+                    if connectionRetryTime > 15 { // 15초 이상 지연 시 팁 표시
+                        Text("재부팅 직후에는 데몬 기동에 시간이 걸릴 수 있습니다.")
+                            .font(.caption2).foregroundColor(.secondary)
+                    }
+                    if connectionRetryTime > 30 { // 30초 이상 지연 시 수동 복구 제안
+                        Button("게이트키퍼 권한 복구 및 재시작") {
+                            repairGatekeeperAndRestart()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 case .notInstalled:
                     HStack {
                         Button("백그라운드 제어 권한 허용 (Helper 설치)") {
@@ -434,6 +445,11 @@ struct ContentView: View {
             // 실시간 갱신 타이머 시작
             timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
                 fetchExtraBatteryInfo()
+                if daemonManager.daemonState == .connecting {
+                    connectionRetryTime += 5
+                } else {
+                    connectionRetryTime = 0
+                }
             }
         }
         .onDisappear {
@@ -636,9 +652,18 @@ struct ContentView: View {
         let plistPath = launchAgentPlistPath()
         
         if enabled {
-            // resolvedPath: 심볼릭 링크 등 해소된 실제 앱 번들 경로 사용
-            // (앱이 Desktop, Downloads 등 임시 위치에서 실행된 경우에도 올바른 경로 기록)
             let bundleURL = Bundle.main.bundleURL
+            
+            // ⚠️ 주의: DMG에서 직접 실행 중인 경우 체크
+            if bundleURL.path.contains("/Volumes/") {
+                let alert = NSAlert()
+                alert.messageText = "설정 실패"
+                alert.informativeText = "자동 실행을 사용하려면 앱을 '응용 프로그램(/Applications)' 폴더로 옮긴 후 다시 시도해주세요."
+                alert.runModal()
+                self.launchAtLogin = false
+                return
+            }
+
             let resolvedBundleURL = (try? URL(resolvingAliasFileAt: bundleURL)) ?? bundleURL
             let executablePath = resolvedBundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
             
@@ -661,11 +686,10 @@ struct ContentView: View {
             </plist>
             """
             
-            // LaunchAgents 폴더 생성 (없을 수 있음)
             let launchAgentsDir = (plistPath as NSString).deletingLastPathComponent
             try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
             
-            // 기존에 등록되어 있으면 먼저 bootout 후 재등록 (경로 변경 대응)
+            // 등록 (새로운 방식: bootstrap 전에 기존 것 kill)
             let bootoutTask = Process()
             bootoutTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             bootoutTask.arguments = ["bootout", "gui/\(getuid())", plistPath]
@@ -674,7 +698,6 @@ struct ContentView: View {
             
             try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
             
-            // 등록 (bootstrap)
             let bootstrapTask = Process()
             bootstrapTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             bootstrapTask.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
@@ -682,16 +705,32 @@ struct ContentView: View {
             
             print("LaunchAgent registered: \(executablePath)")
         } else {
-            // 해제 (bootout)
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             task.arguments = ["bootout", "gui/\(getuid())", plistPath]
             try? task.run()
             task.waitUntilExit()
             
-            // plist 삭제
             try? FileManager.default.removeItem(atPath: plistPath)
             print("LaunchAgent plist removed: \(plistPath)")
+        }
+    }
+
+    private func repairGatekeeperAndRestart() {
+        let appPath = Bundle.main.bundleURL.path
+        let script = "do shell script \"xattr -cr \\\"\(appPath)\\\"\" with administrator privileges"
+        
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            appleScript.executeAndReturnError(&error)
+            if error == nil {
+                // 성공 시 앱 재시작
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                task.arguments = [appPath]
+                try? task.run()
+                NSApplication.shared.terminate(nil)
+            }
         }
     }
 }
