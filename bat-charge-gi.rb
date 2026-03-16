@@ -1,6 +1,6 @@
 cask "bat-charge-gi" do
-  version "3.0.5"
-  sha256 "f313cd0b789f355b49fcb23d4cc5c7a0a8f6df40983db10c6744bb46c2cde6f9"
+  version "3.0.6"
+  sha256 "58c9e363ccbb9dcca97a8d166a0259e6f338a7bae2cf3602cdc20d7ff67a517d"
 
   url "https://github.com/SeongGi/bat-charge-gi/releases/download/v#{version}/bat-charge-gi.dmg"
   name "bat-charge-gi"
@@ -18,10 +18,9 @@ cask "bat-charge-gi" do
   ]
 
   postflight do
-    # 앱 번들을 망가뜨리지 않고 게이트키퍼만 안전하게 해제합니다.
-    system_command "xattr",
-                   args: ["-cr", "#{appdir}/bat-charge-gi.app"],
-                   sudo: false
+    # 타 PC 환경에서 상단 바 아이콘이 뜨지 않는 문제(애드혹 서명 깨짐)를 원천적으로 해결합니다.
+    system_command "xattr", args: ["-cr", "#{appdir}/bat-charge-gi.app"], sudo: true
+    system_command "codesign", args: ["--force", "--deep", "--sign", "-", "#{appdir}/bat-charge-gi.app"], sudo: true
   end
 
   caveats do

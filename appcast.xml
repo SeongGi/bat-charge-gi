@@ -3,6 +3,23 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.0.6</title>
+             <description><![CDATA[
+             <ul>
+                 <li>타 PC 설치 시 상단 바 아이콘 미출력 문제 최종 해결</li>
+                 <li>Homebrew 설치 시 자동 서명(Self-signing) 로직 추가</li>
+                 <li>앱 실행 시 발생하던 '손상됨' 오류 원천 차단</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 12:25:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.6/bat-charge-gi.dmg"
+                        sparkle:version="3.0.6"
+                        sparkle:shortVersionString="3.0.6"
+                        type="application/octet-stream"
+                        length="2600000"
+                        sparkle:edSignature="mi5B6iM3wIyH+3gOs7Mt/asH7slwieNH2lsP2s4NQfelQWf0O+8tYrhEaLzWO3JruCPwUc0eYbVz1TGLVVLGDg==" />
+         </item>
+         <item>
              <title>Version 3.0.5</title>
              <description><![CDATA[
              <ul>
