@@ -3,6 +3,22 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.0.8</title>
+             <description><![CDATA[
+             <ul>
+                 <li>앱 실행 시 끈질기게 나타나던 하얀색 설정 빈 화면을 완전히 제거했습니다.</li>
+                 <li>자동 업데이트 시스템 보안 키 체인을 최종 안정화했습니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 14:05:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.0.8/bat-charge-gi.dmg"
+                        sparkle:version="3.0.8"
+                        sparkle:shortVersionString="3.0.8"
+                        type="application/octet-stream"
+                        length="1417761"
+                        sparkle:edSignature="C3XiHtx/UQvBX33xo0wyUZToI36OQPXy8z1yI75Kz2WhQfl/8nrgTC77YWquJL6pJt3iEqD7jz3VwxSvFfwJDg==" />
+         </item>
+         <item>
              <title>Version 3.0.7</title>
              <description><![CDATA[
              <ul>

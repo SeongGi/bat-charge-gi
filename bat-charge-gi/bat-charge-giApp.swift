@@ -6,12 +6,7 @@ struct bat_charge_giApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        // 하얀 화면 방지: Settings 창이 불필요하게 뜨지 않도록 처리
-        Settings { 
-            EmptyView()
-        }
-        
-        // 대시보드는 필요할 때만 호출 (기본적으로는 숨김)
+        // 대시보드 창만 정의 (필요할 때만 호출)
         Window("고급 배터리 통계", id: "dashboard") {
             DashboardView()
         }
