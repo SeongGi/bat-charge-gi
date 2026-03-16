@@ -6,7 +6,12 @@ struct bat_charge_giApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        // WindowGroup으로 변경하여 시작 시 자동 오픈 방지 (id로만 호출)
+        // 1. Settings 씬이 메인이 되면 시작 시 아무 창도 뜨지 않습니다.
+        Settings {
+            EmptyView()
+        }
+        
+        // 2. 대시보드는 이제 아이디를 통해서만 호출되는 보조 씬이 됩니다.
         WindowGroup(id: "dashboard") {
             DashboardView()
         }
@@ -58,11 +63,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 5. 데몬 상태 확인
         DaemonManager.shared.checkDaemonStatus()
         
-        // 6. 시작 시 불필요하게 뜬 모든 창 닫기 (메뉴바 앱 전용)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // 6. 시작 시 불필요하게 뜬 모든 창 닫기 (메뉴바 앱 전용 강력 조치)
+        // macOS가 이전 상태를 복구하거나 SwiftUI가 첫 씬을 강제로 열 때 이를 차단합니다.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NSApplication.shared.windows.forEach { window in
-                // 메뉴바 팝업(NSPanel)이나 스파클 업데이트 창이 아닌 경우에만 닫음
-                if window.title == "고급 배터리 통계" || window.identifier?.rawValue == "dashboard" {
+                let className = window.className
+                // 메뉴바 헬퍼(NSStatusBarWindow)나 팝업 판넬(NSPanel)은 유지
+                // 그 외 모든 '일반 윈도우'는 닫음
+                if className != "NSStatusBarWindow" && className != "NSPanel" && !className.contains("NSPopover") {
+                    print("Startup Cleanup: Closing unexpected window: \(window.title) (\(className))")
                     window.close()
                 }
             }

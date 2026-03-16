@@ -3,6 +3,22 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.1.0</title>
+             <description><![CDATA[
+             <ul>
+                 <li><b>[긴급]</b> 앱 실행 시 통계 창이 자동으로 뜨거나 중복으로 뜨던 현상을 완벽하게 해결했습니다.</li>
+                 <li>이제 앱은 메뉴바에서만 조용히 시작되며, 사용자가 요청할 때만 창을 엽니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Mon, 16 Mar 2026 14:20:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.1.0/bat-charge-gi.dmg"
+                        sparkle:version="3.1.0"
+                        sparkle:shortVersionString="3.1.0"
+                        type="application/octet-stream"
+                        length="1420560"
+                        sparkle:edSignature="JSsibGkmRG3Sjf8V3FxUNFWX4ksPajZhf3V9crQILiJBk4hmu/m+2CzIcaZZWReJ0SsBWoWSi3hDsRM7kNeqBQ==" />
+         </item>
+         <item>
              <title>Version 3.0.9</title>
              <description><![CDATA[
              <ul>
