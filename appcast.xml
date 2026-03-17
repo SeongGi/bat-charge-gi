@@ -3,6 +3,38 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.1.1</title>
+             <description><![CDATA[
+             <ul>
+                 <li><b>[버그수정]</b> 초기 부팅 시 상단 메뉴바에 아이콘이 중복으로 생성되던 현상을 해결했습니다.</li>
+                 <li><b>[안정성]</b> 백그라운드 데몬과의 연동 신뢰성을 향상시키고 전반적인 앱 구동 안정성을 개선했습니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Tue, 17 Mar 2026 14:19:17 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.1.1/bat-charge-gi.dmg"
+                        sparkle:version="3.1.1"
+                        sparkle:shortVersionString="3.1.1"
+                        type="application/octet-stream"
+                        length="1424684"
+                        sparkle:edSignature="F9W83X8Tw4pH6WFSEXL5ryarOFVkhntl43dMV7UsI4DcBCJ3I/UnWOvv7luE2puEKtmdboDpYpMWk247SSGvBg==" />
+         </item>
+         <item>
+             <title>Version 3.1.1</title>
+             <description><![CDATA[
+             <ul>
+                 <li><b>[버그수정]</b> 초기 부팅 시 상단 메뉴바에 아이콘이 중복으로 생성되던 현상을 해결했습니다.</li>
+                 <li><b>[안정성]</b> 백그라운드 데몬과의 연동 신뢰성을 향상시키고 전반적인 앱 구동 안정성을 개선했습니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Tue, 17 Mar 2026 13:30:00 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.1.1/bat-charge-gi.dmg"
+                        sparkle:version="3.1.1"
+                        sparkle:shortVersionString="3.1.1"
+                        type="application/octet-stream"
+                        length="1421000"
+                        sparkle:edSignature="Hzz89VhGTV+hxsDEHeKiYsAa+SMURZmCshzb+so/9yU=" />
+         </item>
+         <item>
              <title>Version 3.1.0</title>
              <description><![CDATA[
              <ul>
