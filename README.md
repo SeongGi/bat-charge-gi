@@ -95,7 +95,7 @@ brew install --cask bat-charge-gi
 brew update
 brew untap SeongGi/tap
 brew tap SeongGi/tap
-brew reinstall --cask --no-quarantine bat-charge-gi
+brew reinstall --cask bat-charge-gi
 ```
 
 ### 수동 설치
