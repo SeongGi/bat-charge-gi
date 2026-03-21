@@ -672,17 +672,16 @@ struct ContentView: View {
                 return
             }
 
-            // 1순위: SMAppService.mainApp (macOS 13+ 공식)
+            // SMAppService 등록 시도 (시스템 설정에 표시 목적)
             do {
                 try SMAppService.mainApp.register()
-                print("✅ SMAppService.mainApp registered successfully")
-                removeLaunchAgentPlist()  // 이중 등록 방지
-                return
+                print("✅ SMAppService.mainApp registered (for system settings display)")
             } catch {
-                print("⚠️ SMAppService.mainApp failed (\(error.localizedDescription)), falling back to LaunchAgent plist...")
+                print("⚠️ SMAppService.mainApp failed: \(error.localizedDescription)")
             }
 
-            // 2순위 Fallback: LaunchAgent plist 직접 작성
+            // LaunchAgent plist도 항상 등록 (실제 자동실행 담당)
+            // ad-hoc 서명 앱에서 SMAppService가 재부팅 후 실제 실행을 보장하지 못하기 때문
             registerLaunchAgentPlist()
 
         } else {
@@ -698,9 +697,10 @@ struct ContentView: View {
 
     private func registerLaunchAgentPlist() {
         let plistPath = launchAgentPlistPath()
-        let resolvedBundleURL = (try? URL(resolvingAliasFileAt: Bundle.main.bundleURL)) ?? Bundle.main.bundleURL
-        let executablePath = resolvedBundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
 
+        // ★ 핵심 변경: 직접 실행파일 경로 대신 'open -a' 명령 사용
+        // 이렇게 하면 앱이 /Applications에 있든 어디에 있든
+        // macOS Launch Services가 알아서 앱을 찾아 실행합니다.
         let plistContent = """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -710,7 +710,9 @@ struct ContentView: View {
             <string>com.seonggi.bat-charge-gi</string>
             <key>ProgramArguments</key>
             <array>
-                <string>\(executablePath)</string>
+                <string>/usr/bin/open</string>
+                <string>-a</string>
+                <string>bat-charge-gi</string>
             </array>
             <key>RunAtLoad</key>
             <true/>
@@ -718,13 +720,12 @@ struct ContentView: View {
             <false/>
             <key>ThrottleInterval</key>
             <integer>10</integer>
-            <key>EnvironmentVariables</key>
-            <dict>
-                <key>PATH</key>
-                <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-            </dict>
+            <key>LimitLoadToSessionType</key>
+            <string>Aqua</string>
             <key>StandardErrorPath</key>
             <string>/tmp/com.seonggi.bat-charge-gi.err.log</string>
+            <key>StandardOutPath</key>
+            <string>/tmp/com.seonggi.bat-charge-gi.out.log</string>
         </dict>
         </plist>
         """
@@ -743,7 +744,7 @@ struct ContentView: View {
         bootstrap.executableURL = URL(fileURLWithPath: "/bin/launchctl")
         bootstrap.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
         try? bootstrap.run()
-        print("✅ LaunchAgent plist registered: \(executablePath)")
+        print("✅ LaunchAgent registered: open -a bat-charge-gi")
     }
 
     private func removeLaunchAgentPlist() {
