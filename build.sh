@@ -22,7 +22,7 @@ if [ ! -d "Sparkle_Framework/Sparkle.framework" ] || ([ -d "Sparkle_Framework/Sp
 fi
 
 # 소스 경로 권한 및 보안 속성 제거
-sudo xattr -cr Sparkle_Framework/Sparkle.framework || true
+xattr -cr Sparkle_Framework/Sparkle.framework || true
 
 echo "2. Cleaning up old build..."
 rm -rf "${BUNDLE}"
@@ -55,6 +55,7 @@ swiftc \
     Shared/BatteryHelperProtocol.swift \
     -o main_bin -module-cache-path .swift_cache -target arm64-apple-macosx13.0 \
     -F Sparkle_Framework -framework Sparkle \
+    -Xcc -ISparkle_Framework/Sparkle.framework/Headers \
     -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 cp main_bin "${BUNDLE}/Contents/MacOS/${APP_NAME}"
 
@@ -62,13 +63,16 @@ echo "6. Embedding Framework (Using ditto to preserve links)..."
 ditto Sparkle_Framework/Sparkle.framework "${BUNDLE}/Contents/Frameworks/Sparkle.framework"
 
 echo "7. Final Signing (Inner-to-Outer)..."
+# 격리 속성 전면 제거 (타 PC 배포 시 '손상됨' 방지의 핵심)
+find "${BUNDLE}" -name "*" -exec xattr -c {} \; || true
 xattr -cr "${BUNDLE}" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/smc" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper" || true
-codesign --force --deep --options runtime --sign - "${BUNDLE}/Contents/MacOS/bat-charge-gi" || true
+
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" || true
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app" || true
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle" || true
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/MacOS/smc" || true
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/MacOS/com.seonggi.bat-charge-gi.helper" || true
+codesign --force --options runtime --sign - "${BUNDLE}/Contents/MacOS/bat-charge-gi" || true
 codesign --force --deep --options runtime --sign - "${BUNDLE}"
 
 rm -f helper_bin main_bin

@@ -410,7 +410,10 @@ struct ContentView: View {
             HStack {
                 Toggle("로그인 시 자동 실행", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { newValue in
-                        setLaunchAtLogin(enabled: newValue)
+                        // 실제 시스템 상태와 다를 때만 동기화 시도 (무한 루프 방지)
+                        if newValue != isLaunchAtLoginEnabled() {
+                            setLaunchAtLogin(enabled: newValue)
+                        }
                     }
                     .font(.caption)
                 
@@ -432,12 +435,17 @@ struct ContentView: View {
         .padding()
         .frame(width: 340)
         .onAppear {
-            // 1단계: 실제 시스템 상태(파일 존재여부)를 최우선으로 반영
-            let actualStatus = isLaunchAtLoginEnabled()
-            launchAtLogin = actualStatus
+            // ── 최초 로드 시 실제 파일 존재 여부 및 사용자 의도 동기화 ──
+            let plistExists = isLaunchAtLoginEnabled()
+            let userIntent = UserDefaults.standard.bool(forKey: "UserIntent_LaunchAtLogin")
             
-            // 2단계: UserDefaults에도 현재 상태 기록 (동기화)
-            UserDefaults.standard.set(actualStatus, forKey: "UserIntent_LaunchAtLogin")
+            // 파일이 있거나, 사용자가 원하는데 파일이 아직 없는 경우 (재부팅 직후 지연 등) 동기화
+            self.launchAtLogin = plistExists || userIntent
+            
+            // 만약 사용자가 원하는데 파일이 없다면 (재부팅 시 유실 등) 다시 복구 시도
+            if userIntent && !plistExists {
+                setLaunchAtLogin(enabled: true)
+            }
             
             fetchChargeLimit()
             fetchExtraBatteryInfo()
@@ -682,6 +690,15 @@ struct ContentView: View {
                 <true/>
                 <key>KeepAlive</key>
                 <false/>
+                <key>ThrottleInterval</key>
+                <integer>10</integer>
+                <key>EnvironmentVariables</key>
+                <dict>
+                    <key>PATH</key>
+                    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+                </dict>
+                <key>StandardErrorPath</key>
+                <string>/tmp/com.seonggi.bat-charge-gi.err.log</string>
             </dict>
             </plist>
             """

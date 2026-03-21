@@ -39,39 +39,40 @@ class DaemonManager: ObservableObject {
     
     func checkDaemonStatus() {
         // 1단계: SMAppService 공식 API 체크
-        if service.status == .enabled {
+        let currentStatus = service.status
+        if currentStatus == .enabled {
             markAsRegistered()
             return
         }
         
-        // 2단계: plist가 있으면 "설치됨이지만 아직 기동 대기 중" 상태로 표시
-        if isDaemonPlistInstalled {
-            DispatchQueue.main.async {
+        // 2단계: 파일 존재 여부 확인
+        let installed = isDaemonPlistInstalled
+        
+        DispatchQueue.main.async {
+            if installed {
                 self.daemonState = .connecting
+                self.logger.notice("Daemon installed but not enabled/responded. status: \(String(describing: currentStatus))")
+            } else {
+                self.daemonState = .notInstalled
             }
         }
         
-        // 3단계: XPC 직접 Ping (launchctl로 수동 등록된 데몬 감지)
-        // ⚠⚠⚠ 절대 .privileged 옵션을 붙이지 말 것! ⚠⚠⚠
-        // .privileged는 구형 SMJobBless 전용이며, 이걸 붙이면 macOS가
-        // "구형 헬퍼 설치가 필요하다"고 오인하여 시스템 자체적으로 강제 암호 팝업을 무한 생성함.
+        // 3단계: XPC Ping (Mach Port 직접 연결)
+        // ⚠ 절대 .privileged 붙이지 말 것!
         let pingConnection = NSXPCConnection(machServiceName: "com.seonggi.bat-charge-gi.helper")
         pingConnection.remoteObjectInterface = NSXPCInterface(with: BatteryHelperProtocol.self)
         pingConnection.resume()
         
-        if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ _ in
+        if let proxy = pingConnection.remoteObjectProxyWithErrorHandler({ error in
             DispatchQueue.main.async {
-                // plist가 있으면 "연결 중..." 상태 유지, 없으면 "미설치"
-                if self.isDaemonPlistInstalled {
+                self.isDaemonRegistered = false
+                if installed {
                     self.daemonState = .connecting
-                    self.isDaemonRegistered = false
+                    // 첫 로드 시 바로 타이머 시작하여 기동 대기
+                    self.startRetryTimer()
                 } else {
                     self.daemonState = .notInstalled
-                    self.isDaemonRegistered = false
                 }
-                self.logger.warning("XPC Ping failed. Daemon may not be running yet. (retry \(self.retryCount)/\(self.maxRetries))")
-                // 재부팅 직후 데몬이 앱보다 늦게 뜨는 경우를 대비하여 자동 재시도
-                self.startRetryTimer()
             }
             pingConnection.invalidate()
         }) as? BatteryHelperProtocol {
@@ -149,36 +150,32 @@ class DaemonManager: ObservableObject {
     /// plist가 이미 /Library/LaunchDaemons에 있을 때, 암호 없이 데몬을 강제 기동
     private func kickstartDaemon() {
         DispatchQueue.global(qos: .userInitiated).async {
-            // 1. 데몬 바이너리에 Gatekeeper 해제 적용 (root 권한 파일이어도 적용 가능)
+            self.logger.notice("Kickstarting helper daemon...")
+            
+            // 1. 데몬 바이너리 및 프레임워크 게이트키퍼 격리 해제 (어드민 비밀번호 없이도 가능한 범위)
+            let helperPath = "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"
             let fixXattr = Process()
             fixXattr.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
-            fixXattr.arguments = ["-cr", "/Library/PrivilegedHelperTools/com.seonggi.bat-charge-gi.helper"]
+            fixXattr.arguments = ["-cr", helperPath]
             try? fixXattr.run()
             fixXattr.waitUntilExit()
 
-            // 2. launchctl kickstart는 이미 bootstrap된 서비스를 강제 기동 (암호 불필요)
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            task.arguments = ["kickstart", "-k", "system/com.seonggi.bat-charge-gi.helper"]
-            let pipe = Pipe()
-            task.standardOutput = pipe
-            task.standardError = pipe
-            do {
-                try task.run()
-                task.waitUntilExit()
-                
-                // 만약 kickstart가 실패하면(등록이 안 되어 있으면), bootstrap 시도 (root 권한 파일이 이미 /Library에 있으면 성공 가능함)
-                if task.terminationStatus != 0 {
-                    self.logger.notice("kickstart failed (code \(task.terminationStatus)). Trying bootstrap...")
-                    let bt = Process()
-                    bt.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-                    bt.arguments = ["bootstrap", "system", "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"]
-                    try? bt.run()
-                    bt.waitUntilExit()
-                }
-            } catch {
-                self.logger.error("kickstart failed: \(error.localizedDescription)")
-            }
+            // 2. launchctl bootout -> bootstrap 을 통해 서비스 완전 재기동
+            let plistPath = "/Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist"
+            
+            let bootout = Process()
+            bootout.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            bootout.arguments = ["bootout", "system", plistPath]
+            try? bootout.run()
+            bootout.waitUntilExit()
+            
+            let bootstrap = Process()
+            bootstrap.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            bootstrap.arguments = ["bootstrap", "system", plistPath]
+            try? bootstrap.run()
+            bootstrap.waitUntilExit()
+            
+            self.logger.notice("Kickstart process completed.")
         }
     }
     
@@ -239,9 +236,11 @@ class DaemonManager: ObservableObject {
                 "mkdir -p /Library/PrivilegedHelperTools/ && " +
                 "cp \\\"\(helperPath)\\\" \\\"\(privilegedPath)\\\" && " +
                 "cp \\\"\(smcPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
+                "xattr -cr \\\"\(privilegedPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
                 "chown root:wheel \\\"\(privilegedPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
                 "chmod 755 \\\"\(privilegedPath)\\\" \\\"\(privilegedSmcPath)\\\" && " +
                 "cp \\\"\(tmpPlistPath)\\\" /Library/LaunchDaemons/ && " +
+                "xattr -cr /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
                 "chown root:wheel /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
                 "chmod 644 /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist && " +
                 "launchctl bootstrap system /Library/LaunchDaemons/com.seonggi.bat-charge-gi.helper.plist" +
