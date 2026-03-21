@@ -435,21 +435,22 @@ struct ContentView: View {
         .padding()
         .frame(width: 340)
         .onAppear {
-            // ── 최초 로드 시 실제 파일 존재 여부 및 사용자 의도 동기화 ──
-            let plistExists = isLaunchAtLoginEnabled()
+            // ── SMAppService 상태를 우선 확인, 그 다음 LaunchAgent plist 확인 ──
+            let smService = SMAppService.mainApp
+            let smEnabled = smService.status == .enabled
+            let plistExists = isLaunchAgentPlistInstalled()
             let userIntent = UserDefaults.standard.bool(forKey: "UserIntent_LaunchAtLogin")
-            
-            // 파일이 있거나, 사용자가 원하는데 파일이 아직 없는 경우 (재부팅 직후 지연 등) 동기화
-            self.launchAtLogin = plistExists || userIntent
-            
-            // 만약 사용자가 원하는데 파일이 없다면 (재부팅 시 유실 등) 다시 복구 시도
-            if userIntent && !plistExists {
+
+            self.launchAtLogin = smEnabled || plistExists || userIntent
+
+            // 사용자가 원하는데 둘 다 등록되지 않은 경우 복구 시도
+            if userIntent && !smEnabled && !plistExists {
                 setLaunchAtLogin(enabled: true)
             }
-            
+
             fetchChargeLimit()
             fetchExtraBatteryInfo()
-            
+
             // 실시간 갱신 타이머 시작
             timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
                 fetchExtraBatteryInfo()
@@ -601,7 +602,7 @@ struct ContentView: View {
     }
     
     // MARK: - 부가 기능 적용 XPC Wrapper
-    
+
     func applyDischargeMode(enabled: Bool) {
         print("[XPC] applyDischargeMode(\(enabled)) called")
         if let proxy = daemonManager.helperConnection()?.remoteObjectProxyWithErrorHandler({ error in
@@ -614,19 +615,19 @@ struct ContentView: View {
             print("[XPC] FAILED: proxy is nil, helper not connected")
         }
     }
-    
+
     func applySailingMode(enabled: Bool) {
         if let proxy = daemonManager.helperConnection()?.remoteObjectProxyWithErrorHandler({ _ in }) as? BatteryHelperProtocol {
             proxy.setSailingMode(enabled: enabled, withReply: { _, _ in })
         }
     }
-    
+
     func applyCalibrationMode(enabled: Bool) {
         if let proxy = daemonManager.helperConnection()?.remoteObjectProxyWithErrorHandler({ _ in }) as? BatteryHelperProtocol {
             proxy.setCalibrationMode(enabled: enabled, withReply: { _, _ in })
         }
     }
-    
+
     private func sendClamshellNotification() {
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
@@ -639,31 +640,30 @@ struct ContentView: View {
             center.add(request)
         }
     }
-    
-    // MARK: - 로그인 시 자동 실행 (LaunchAgent plist 기반)
-    // ad-hoc 서명 앱에서는 SMAppService.mainApp이 정상 동작하지 않으므로
-    // ~/Library/LaunchAgents/ 에 plist 파일을 직접 관리합니다.
-    
+
+    // MARK: - 로그인 시 자동 실행
+    // SMAppService.mainApp 을 1순위로 사용하고, 실패 시 LaunchAgent plist로 Fallback
+    // SMAppService는 macOS 13+ 공식 API로 시스템 설정 로그인 항목과 완벽 연동됨
+
     private func launchAgentPlistPath() -> String {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return "\(home)/Library/LaunchAgents/com.seonggi.bat-charge-gi.plist"
     }
-    
-    /// LaunchAgent plist 파일이 존재하면 '자동 실행' 설정이 된 것으로 간주 (ad-hoc 앱에서 가장 확실한 방법)
+
     private func isLaunchAtLoginEnabled() -> Bool {
-        let plistPath = launchAgentPlistPath()
-        return FileManager.default.fileExists(atPath: plistPath)
+        if SMAppService.mainApp.status == .enabled { return true }
+        return isLaunchAgentPlistInstalled()
     }
-    
+
+    private func isLaunchAgentPlistInstalled() -> Bool {
+        return FileManager.default.fileExists(atPath: launchAgentPlistPath())
+    }
+
     private func setLaunchAtLogin(enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: "UserIntent_LaunchAtLogin")
-        let plistPath = launchAgentPlistPath()
-        
+
         if enabled {
-            let bundleURL = Bundle.main.bundleURL
-            
-            // ⚠️ 주의: DMG에서 직접 실행 중인 경우 체크
-            if bundleURL.path.contains("/Volumes/") {
+            if Bundle.main.bundleURL.path.contains("/Volumes/") {
                 let alert = NSAlert()
                 alert.messageText = "설정 실패"
                 alert.informativeText = "자동 실행을 사용하려면 앱을 '응용 프로그램(/Applications)' 폴더로 옮긴 후 다시 시도해주세요."
@@ -672,76 +672,99 @@ struct ContentView: View {
                 return
             }
 
-            let resolvedBundleURL = (try? URL(resolvingAliasFileAt: bundleURL)) ?? bundleURL
-            let executablePath = resolvedBundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
-            
-            let plistContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-                <key>Label</key>
-                <string>com.seonggi.bat-charge-gi</string>
-                <key>ProgramArguments</key>
-                <array>
-                    <string>\(executablePath)</string>
-                </array>
-                <key>RunAtLoad</key>
-                <true/>
-                <key>KeepAlive</key>
-                <false/>
-                <key>ThrottleInterval</key>
-                <integer>10</integer>
-                <key>EnvironmentVariables</key>
-                <dict>
-                    <key>PATH</key>
-                    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-                </dict>
-                <key>StandardErrorPath</key>
-                <string>/tmp/com.seonggi.bat-charge-gi.err.log</string>
-            </dict>
-            </plist>
-            """
-            
-            let launchAgentsDir = (plistPath as NSString).deletingLastPathComponent
-            try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
-            
-            // 등록 (새로운 방식: bootstrap 전에 기존 것 kill)
-            let bootoutTask = Process()
-            bootoutTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            bootoutTask.arguments = ["bootout", "gui/\(getuid())", plistPath]
-            try? bootoutTask.run()
-            bootoutTask.waitUntilExit()
-            
-            try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
-            
-            let bootstrapTask = Process()
-            bootstrapTask.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            bootstrapTask.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
-            try? bootstrapTask.run()
-            
-            print("LaunchAgent registered: \(executablePath)")
+            // 1순위: SMAppService.mainApp (macOS 13+ 공식)
+            do {
+                try SMAppService.mainApp.register()
+                print("✅ SMAppService.mainApp registered successfully")
+                removeLaunchAgentPlist()  // 이중 등록 방지
+                return
+            } catch {
+                print("⚠️ SMAppService.mainApp failed (\(error.localizedDescription)), falling back to LaunchAgent plist...")
+            }
+
+            // 2순위 Fallback: LaunchAgent plist 직접 작성
+            registerLaunchAgentPlist()
+
         } else {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            task.arguments = ["bootout", "gui/\(getuid())", plistPath]
-            try? task.run()
-            task.waitUntilExit()
-            
-            try? FileManager.default.removeItem(atPath: plistPath)
-            print("LaunchAgent plist removed: \(plistPath)")
+            do {
+                try SMAppService.mainApp.unregister()
+                print("✅ SMAppService.mainApp unregistered")
+            } catch {
+                print("⚠️ SMAppService unregister failed: \(error.localizedDescription)")
+            }
+            removeLaunchAgentPlist()
         }
+    }
+
+    private func registerLaunchAgentPlist() {
+        let plistPath = launchAgentPlistPath()
+        let resolvedBundleURL = (try? URL(resolvingAliasFileAt: Bundle.main.bundleURL)) ?? Bundle.main.bundleURL
+        let executablePath = resolvedBundleURL.appendingPathComponent("Contents/MacOS/bat-charge-gi").path
+
+        let plistContent = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Label</key>
+            <string>com.seonggi.bat-charge-gi</string>
+            <key>ProgramArguments</key>
+            <array>
+                <string>\(executablePath)</string>
+            </array>
+            <key>RunAtLoad</key>
+            <true/>
+            <key>KeepAlive</key>
+            <false/>
+            <key>ThrottleInterval</key>
+            <integer>10</integer>
+            <key>EnvironmentVariables</key>
+            <dict>
+                <key>PATH</key>
+                <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+            </dict>
+            <key>StandardErrorPath</key>
+            <string>/tmp/com.seonggi.bat-charge-gi.err.log</string>
+        </dict>
+        </plist>
+        """
+
+        let dir = (plistPath as NSString).deletingLastPathComponent
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+
+        let bootout = Process()
+        bootout.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        bootout.arguments = ["bootout", "gui/\(getuid())", plistPath]
+        try? bootout.run(); bootout.waitUntilExit()
+
+        try? plistContent.write(toFile: plistPath, atomically: true, encoding: .utf8)
+
+        let bootstrap = Process()
+        bootstrap.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        bootstrap.arguments = ["bootstrap", "gui/\(getuid())", plistPath]
+        try? bootstrap.run()
+        print("✅ LaunchAgent plist registered: \(executablePath)")
+    }
+
+    private func removeLaunchAgentPlist() {
+        let plistPath = launchAgentPlistPath()
+        guard FileManager.default.fileExists(atPath: plistPath) else { return }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        task.arguments = ["bootout", "gui/\(getuid())", plistPath]
+        try? task.run(); task.waitUntilExit()
+        try? FileManager.default.removeItem(atPath: plistPath)
+        print("✅ LaunchAgent plist removed")
     }
 
     private func repairGatekeeperAndRestart() {
         let appPath = Bundle.main.bundleURL.path
         let script = "do shell script \"xattr -cr \\\"\(appPath)\\\"\" with administrator privileges"
-        
+
         var error: NSDictionary?
         if let appleScript = NSAppleScript(source: script) {
             appleScript.executeAndReturnError(&error)
             if error == nil {
-                // 성공 시 앱 재시작
                 let task = Process()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
                 task.arguments = [appPath]
