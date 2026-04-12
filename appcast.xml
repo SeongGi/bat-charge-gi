@@ -3,6 +3,23 @@
     <channel>
         <title>bat-charge-gi 업데이트</title>
          <item>
+             <title>Version 3.1.6</title>
+             <description><![CDATA[
+             <ul>
+                 <li><b>[치명적 버그 수정]</b> 재부팅 시 앱이 자동 실행되지 않던 문제를 해결했습니다. (LaunchAgent exit code 78)</li>
+                 <li><b>[개선]</b> 구버전 LaunchAgent plist를 자동으로 최신 형식(open -b)으로 마이그레이션하는 기능을 추가했습니다.</li>
+                 <li><b>[안정성]</b> 재부팅 직후 중복 실행 경쟁 조건(race condition)을 방지하여 앱 기동 안정성을 개선했습니다.</li>
+             </ul>
+             ]]></description>
+             <pubDate>Sun, 12 Apr 2026 22:32:47 +0900</pubDate>
+             <enclosure url="https://github.com/SeongGi/bat-charge-gi/releases/download/v3.1.6/bat-charge-gi.dmg"
+                        sparkle:version="3.1.6"
+                        sparkle:shortVersionString="3.1.6"
+                        type="application/octet-stream"
+                        length="1398166"
+                        sparkle:edSignature="bdQLojAM2oO2xWR43rGFrhHGxpFVf63Puto4XEMXsEFVOjqy9aDxJUW5Ijt5RSiZb2Ngid4GOwtAfq/qwPfSBw==" />
+         </item>
+         <item>
              <title>Version 3.1.5</title>
              <description><![CDATA[
              <ul>
